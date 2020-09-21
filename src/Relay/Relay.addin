@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Application Relay</Name>
+    <Assembly>Relay.dll</Assembly>
+    <FullClassName>Relay.App</FullClassName>
+    <ClientId>c7f32253-5715-42f7-909c-7a777400cce6</ClientId>
+    <VendorId>ParallaxTeam</VendorId>
+    <VendorDescription>Parallax Team Inc., http://parallaxteam.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>
