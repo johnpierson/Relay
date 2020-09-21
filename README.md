@@ -1,6 +1,4 @@
 <h1 align="center">
-  Relay for Revit
-  <br>
   <img src="https://github.com/ParallaxTeam/Relay/blob/master/_resources/relayLogo.png" alt="Relay" width="400">
 
 </h1>
