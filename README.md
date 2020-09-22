@@ -8,6 +8,8 @@
    <img src="https://forthebadge.com/images/badges/as-seen-on-tv.svg">
 </p>
 
+## Usage
+TODO: Document Usage.
 
 ## Price
 This app is provided "as-is" and open source. This is made possible thanks to [Parallax Team's](https://www.parallaxteam.com/) commitment to sharing knowledge. Support and an installer is available for subscription at https://www.parallaxteam.com/product/relay/.
