@@ -8,6 +8,8 @@
    <img src="https://forthebadge.com/images/badges/as-seen-on-tv.svg">
 </p>
 
+<img src="https://img.shields.io/badge/License-GPLv3-blue.svg">
+
 ## Usage
 TODO: Document Usage.
 
