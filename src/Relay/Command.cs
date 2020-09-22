@@ -2,22 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Media.Imaging;
-using Autodesk.DesignScript.Geometry;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
 using Dynamo.Applications;
-using Dynamo.Applications.Models;
-using Dynamo.Core;
 using Relay.Utilities;
-using RevitServices;
 using Application = Autodesk.Revit.ApplicationServices.Application;
-using Line = Autodesk.DesignScript.Geometry.Line;
-using Point = Autodesk.DesignScript.Geometry.Point;
+using TaskDialog = Autodesk.Revit.UI.TaskDialog;
+using TaskDialogCommonButtons = Autodesk.Revit.UI.TaskDialogCommonButtons;
+using TaskDialogIcon = Autodesk.Revit.UI.TaskDialogIcon;
 
 namespace Relay
 {
@@ -56,6 +50,7 @@ namespace Relay
                 RibbonUtils.AddItems(panelToUse, toCreate);
             }
 
+            //subscribe to the events of the button to associate the current DYN
             Autodesk.Windows.ComponentManager.UIElementActivated -= ComponentManagerOnUIElementActivated;
             Autodesk.Windows.ComponentManager.UIElementActivated += ComponentManagerOnUIElementActivated;
 
@@ -112,6 +107,29 @@ namespace Relay
             };
 
             return dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
+
+        }
+    }
+    [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    public class About : IExternalCommand
+    {
+        public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+        {
+            TaskDialog aboutDialog = new TaskDialog($"Linked Details v.{Globals.RevitVersion}")
+            {
+                MainIcon = TaskDialogIcon.TaskDialogIconInformation,
+                MainInstruction =
+                    @"Hi there! Relay allows you to add DYNs to your ribbon in a pretty okay way.",
+                MainContent = $"For a tutorial on getting started, go to the github.",
+                CommonButtons = TaskDialogCommonButtons.Ok,
+                FooterText = @"<a href=""https://icons8.com/"">Icons Courtesy of Icons8</a>"
+            };
+
+            var dialogResult = aboutDialog.Show();
+
+
+            return Result.Succeeded;
 
         }
     }

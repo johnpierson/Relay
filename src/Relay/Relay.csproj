@@ -92,6 +92,10 @@
       <HintPath>..\..\..\..\..\Desktop\Dynamo_2.6.0\DynamoUtilities.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Humanizer, Version=2.8.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
+      <HintPath>..\packages\Humanizer.Core.2.8.26\lib\netstandard2.0\Humanizer.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="ProtoGeometry">
@@ -134,14 +138,17 @@
     <Compile Include="Utilities\DynamoUtils.cs" />
     <Compile Include="Utilities\Globals.cs" />
     <Compile Include="Utilities\RibbonUtils.cs" />
+    <Compile Include="Utilities\Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="images\logo.png" />
     <Content Include="Relay.addin" />
+    <EmbeddedResource Include="Resources\Humanizer.dll" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
     <PostBuildEvent>if exist "$(AppData)\Autodesk\REVIT\Addins\2020" copy "$(ProjectDir)*.addin" "$(AppData)\Autodesk\REVIT\Addins\2020"

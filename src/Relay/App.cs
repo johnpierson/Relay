@@ -1,12 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Windows.Media.Imaging;
-using Autodesk.Revit.ApplicationServices;
-using Autodesk.Revit.Attributes;
-using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Windows;
 using Relay.Utilities;
 
 
@@ -16,6 +13,8 @@ namespace Relay
     {
         public Result OnStartup(UIControlledApplication a)
         {
+            // Attach custom event handler
+            AppDomain.CurrentDomain.AssemblyResolve += CurrentDomainOnAssemblyResolve;
             CreateRibbon(a);
             return Result.Succeeded;
         }
@@ -39,15 +38,41 @@ namespace Relay
 
             //add our setup panel and button
             var setupRibbonPanel = a.CreateRibbonPanel("Relay", "Setup");
-            PushButtonData setupButtonData = new PushButtonData("SyncGraphs", "Sync\nGraphs",
+
+            PushButtonData aboutButtonData = new PushButtonData("AboutRelay", "About\nRelay",
+                Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.About")
+            {
+                Image = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "About_16.png")))
+            };
+            
+            PushButtonData syncButtonData = new PushButtonData("SyncGraphs", "Sync\nGraphs",
                 Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.RefreshGraphs")
             {
-                LargeImage = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "sync.png")))
+                Image = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Sync_16.png")))
             };
-
-            setupRibbonPanel.AddItem(setupButtonData);
+            setupRibbonPanel.AddStackedItems(aboutButtonData,syncButtonData);
             
 
+        }
+        private Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
+        {
+            // Get assembly name
+            var assemblyName = new AssemblyName(args.Name).Name + ".dll";
+
+            // Get resource name
+            var resourceName = Globals.EmbeddedLibraries.FirstOrDefault(x => x.EndsWith(assemblyName));
+            if (resourceName == null)
+            {
+                return null;
+            }
+
+            // Load assembly from resource
+            using (var stream = Globals.ExecutingAssembly.GetManifestResourceStream(resourceName))
+            {
+                var bytes = new byte[stream.Length];
+                stream.Read(bytes, 0, bytes.Length);
+                return Assembly.Load(bytes);
+            }
         }
     }
 }

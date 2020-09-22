@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using AW = Autodesk.Windows;
@@ -17,6 +16,7 @@ namespace Relay.Utilities
                 list.Add(me.GetRange(i, Math.Min(size, me.Count - i)));
             return list;
         }
+
         public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths)
         {
             var totalFiles = dynPaths.Length;
@@ -27,7 +27,7 @@ namespace Relay.Utilities
                 FileInfo fInfo = new FileInfo(file);
                 string buttonName = $"relay{fInfo.Name.Replace(" ", "")}";
                 PushButtonData newButtonData = new PushButtonData(buttonName,
-                    fInfo.Name.Replace(".dyn",""),
+                    fInfo.Name.GenerateButtonText(),
                     Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
                 {
                     ToolTip = fInfo.FullName
@@ -117,5 +117,6 @@ namespace Relay.Utilities
             }
             return null;
         }
+
     }
 }
