@@ -50,36 +50,10 @@ namespace Relay
                     panelToUse = uiapp.GetRibbonPanels("Relay").First(p => p.Name.Equals(dInfo.Name));
                 }
 
-                ////create the buttons
-                //foreach (var file in Directory.GetFiles(directory, "*.dyn"))
-                //{
-                //    FileInfo fInfo = new FileInfo(file);
+                var toCreate = Directory.GetFiles(directory, "*.dyn")
+                    .Where(f => RibbonUtils.GetButton("Relay", dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
 
-                //    string buttonName = $"relay{fInfo.Name.Replace(" ", "")}";
-
-                //    PushButtonData newButtonData = new PushButtonData(buttonName,
-                //        fInfo.Name,
-                //        Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
-                //    {
-                //        ToolTip = fInfo.FullName
-                //    };
-
-                //    string icoPath = fInfo.FullName.Replace(".dyn", ".png");
-                //    newButtonData.LargeImage = File.Exists(icoPath)
-                //        ? new BitmapImage(new Uri(icoPath))
-                //        : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo.png")));
-
-                //    try
-                //    {
-                //        panelToUse.AddItem(newButtonData);
-                //    }
-                //    catch (Exception)
-                //    {
-                //        var item = panelToUse.GetItems().First(b => b.Name.Equals(buttonName));
-                //    }
-                //}
-
-                RibbonUtils.AddItems(panelToUse, Directory.GetFiles(directory, "*.dyn"));
+                RibbonUtils.AddItems(panelToUse, toCreate);
             }
 
             Autodesk.Windows.ComponentManager.UIElementActivated -= ComponentManagerOnUIElementActivated;

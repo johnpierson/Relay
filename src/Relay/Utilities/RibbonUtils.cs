@@ -19,7 +19,6 @@ namespace Relay.Utilities
         }
         public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths)
         {
-            //TODO: Implement duplicate fix
             var totalFiles = dynPaths.Length;
 
             List<PushButtonData> pushButtonDatas = new List<PushButtonData>();
@@ -28,20 +27,21 @@ namespace Relay.Utilities
                 FileInfo fInfo = new FileInfo(file);
                 string buttonName = $"relay{fInfo.Name.Replace(" ", "")}";
                 PushButtonData newButtonData = new PushButtonData(buttonName,
-                    fInfo.Name,
+                    fInfo.Name.Replace(".dyn",""),
                     Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
                 {
                     ToolTip = fInfo.FullName
                 };
 
-                string icoPath = fInfo.FullName.Replace(".dyn", ".png");
-                //TODO: Implement check for 32 and 16 px files
-                newButtonData.LargeImage = File.Exists(icoPath)
-                    ? new BitmapImage(new Uri(icoPath))
+                //set the images, if there are none, use default
+                string icon32 = fInfo.FullName.Replace(".dyn", "_32.png");
+                newButtonData.LargeImage = File.Exists(icon32)
+                    ? new BitmapImage(new Uri(icon32))
                     : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo_32.png")));
 
-                newButtonData.Image = File.Exists(icoPath)
-                    ? new BitmapImage(new Uri(icoPath))
+                string icon16 = fInfo.FullName.Replace(".dyn", "_16.png");
+                newButtonData.Image = File.Exists(icon16)
+                    ? new BitmapImage(new Uri(icon16))
                     : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo_16.png")));
 
                 pushButtonDatas.Add(newButtonData);
@@ -61,11 +61,7 @@ namespace Relay.Utilities
                         break;
                 }
             }
-
-
-            return;
         }
-
 
         public static AW.RibbonItem GetButton(string tabName, string panelName, string itemName)
         {
@@ -88,6 +84,7 @@ namespace Relay.Utilities
             }
             return null;
         }
+
         public static AW.RibbonPanel GetPanel(string tabName, string panelName)
         {
             AW.RibbonControl ribbon = AW.ComponentManager.Ribbon;
