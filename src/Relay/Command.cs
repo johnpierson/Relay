@@ -25,7 +25,6 @@ namespace Relay
             Application app = uiapp.Application;
             Document doc = uidoc.Document;
 
-
             var relayTab = RibbonUtils.GetTab("Relay");
 
             //create the panels for the sub directories
@@ -121,7 +120,7 @@ namespace Relay
                 MainIcon = TaskDialogIcon.TaskDialogIconInformation,
                 MainInstruction =
                     @"Hi there! Relay allows you to add DYNs to your ribbon in a pretty okay way.",
-                MainContent = $"For a tutorial on getting started, go to the github.",
+                MainContent = @"For a tutorial on getting started, go to <a href=""https://www.notion.so/parallaxteam/Relay-for-Revit-6732550b41d34bce8edc518c0d0e47b9"">Relay docs</a>",
                 CommonButtons = TaskDialogCommonButtons.Ok,
                 FooterText = @"<a href=""https://icons8.com/"">Icons Courtesy of Icons8</a>"
             };
