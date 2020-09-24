@@ -14,7 +14,7 @@
 https://www.notion.so/parallaxteam/Relay-for-Revit-6732550b41d34bce8edc518c0d0e47b9
 
 ## Price
-This app is provided "as-is" and open source. This is made possible thanks to [Parallax Team's](https://www.parallaxteam.com/) commitment to sharing knowledge. Support and an installer is available for subscription at https://www.parallaxteam.com/product/relay/.
+This app is provided "as-is" and open source. This is made possible thanks to [Parallax Team's](https://www.parallaxteam.com/) commitment to sharing knowledge. Support and a licensed installer is available for subscription at https://www.parallaxteam.com/product/relay/.
 
 ## License
 This project is licensed under the [GNU Lesser General Public License v3 (LGPL-3.0)](https://github.com/ParallaxTeam/Relay/blob/master/LICENSE). By using this project you agree to the terms and conditions of the license. A simplified summary of this license is available at [TLDRLegal](https://tldrlegal.com/license/gnu-lesser-general-public-license-v3-(lgpl-3)).
