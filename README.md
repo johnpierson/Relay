@@ -10,8 +10,8 @@
 
 <img src="https://img.shields.io/badge/License-GPLv3-blue.svg">
 
-## Usage
-TODO: Document Usage.
+## Documentation
+https://www.notion.so/parallaxteam/Relay-for-Revit-6732550b41d34bce8edc518c0d0e47b9
 
 ## Price
 This app is provided "as-is" and open source. This is made possible thanks to [Parallax Team's](https://www.parallaxteam.com/) commitment to sharing knowledge. Support and an installer is available for subscription at https://www.parallaxteam.com/product/relay/.
