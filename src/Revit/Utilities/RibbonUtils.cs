@@ -17,7 +17,7 @@ namespace Relay.Utilities
             return list;
         }
 
-        public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths)
+        public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths, bool forceLargeIcon = false)
         {
             var totalFiles = dynPaths.Length;
 
@@ -47,6 +47,15 @@ namespace Relay.Utilities
                 pushButtonDatas.Add(newButtonData);
             }
 
+            if (forceLargeIcon)
+            {
+                foreach (var pushButton in pushButtonDatas)
+                {
+                    panelToUse.AddItem(pushButton);
+                }
+                return;
+            }
+
             var splitButtons = SplitList(pushButtonDatas, 2);
 
             foreach (var buttonGroup in splitButtons)
@@ -61,6 +70,7 @@ namespace Relay.Utilities
                         break;
                 }
             }
+
         }
 
         public static AW.RibbonItem GetButton(string tabName, string panelName, string itemName)

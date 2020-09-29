@@ -93,7 +93,7 @@
       <Private>False</Private>
     </Reference>
     <Reference Include="Humanizer, Version=2.8.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
-      <HintPath>..\packages\Humanizer.Core.2.8.26\lib\netstandard2.0\Humanizer.dll</HintPath>
+      <HintPath>packages\Humanizer.Core.2.8.26\lib\netstandard2.0\Humanizer.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="PresentationCore" />
@@ -130,6 +130,7 @@
       <HintPath>..\..\..\..\..\Desktop\Dynamo_2.6.0\VMDataBridge.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="App.cs" />
@@ -141,7 +142,6 @@
     <Compile Include="Utilities\Utilities.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="images\logo.png" />
     <Content Include="Relay.addin" />
     <EmbeddedResource Include="Resources\Humanizer.dll" />
   </ItemGroup>

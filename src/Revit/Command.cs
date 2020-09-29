@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Windows.Input;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
@@ -9,6 +10,7 @@ using Autodesk.Windows;
 using Dynamo.Applications;
 using Relay.Utilities;
 using Application = Autodesk.Revit.ApplicationServices.Application;
+using Control = Autodesk.Revit.DB.Control;
 using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 using TaskDialogCommonButtons = Autodesk.Revit.UI.TaskDialogCommonButtons;
 using TaskDialogIcon = Autodesk.Revit.UI.TaskDialogIcon;
@@ -30,10 +32,12 @@ namespace Relay
             //create the panels for the sub directories
             foreach (var directory in Directory.GetDirectories(Globals.RelayGraphs))
             {
+                //the upper folder name (panel name)
                 DirectoryInfo dInfo = new DirectoryInfo(directory);
 
-                Autodesk.Revit.UI.RibbonPanel panelToUse = null;
+                Autodesk.Revit.UI.RibbonPanel panelToUse;
 
+                //try to create the panel, if it already exists, just use it
                 try
                 {
                     panelToUse = uiapp.CreateRibbonPanel("Relay", dInfo.Name);
@@ -43,10 +47,14 @@ namespace Relay
                     panelToUse = uiapp.GetRibbonPanels("Relay").First(p => p.Name.Equals(dInfo.Name));
                 }
 
+                //find the files that do not have a button yet
                 var toCreate = Directory.GetFiles(directory, "*.dyn")
                     .Where(f => RibbonUtils.GetButton("Relay", dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
 
-                RibbonUtils.AddItems(panelToUse, toCreate);
+                //if the user is holding down the left shift key, then force the large icons
+                bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
+
+                RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
             }
 
             //subscribe to the events of the button to associate the current DYN
