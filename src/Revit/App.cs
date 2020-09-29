@@ -50,6 +50,9 @@ namespace Relay
             {
                 Image = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Sync_16.png")))
             };
+            syncButtonData.ToolTip =
+                "This will sync graphs from the default graph directory. Hold down left shift key to force large images";
+
             setupRibbonPanel.AddStackedItems(aboutButtonData,syncButtonData);
             
 
