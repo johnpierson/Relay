@@ -10,7 +10,6 @@ using Autodesk.Windows;
 using Dynamo.Applications;
 using Relay.Utilities;
 using Application = Autodesk.Revit.ApplicationServices.Application;
-using Control = Autodesk.Revit.DB.Control;
 using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 using TaskDialogCommonButtons = Autodesk.Revit.UI.TaskDialogCommonButtons;
 using TaskDialogIcon = Autodesk.Revit.UI.TaskDialogIcon;
@@ -96,8 +95,23 @@ namespace Relay
             //toggle the graph to automatic. this is required for running Dynamo UI-Les
             DynamoUtils.SetToAutomatic(dynamoJournal);
 
+            //this is the UI stuff
+            //if (File.Exists(Path.Combine(Globals.ExecutingPath, "Prlx.RelayUI.dll")))
+            //{
+            //    try
+            //    {
+            //        Prlx.RelayUI.UI.SampleWindow sample = Prlx.RelayUI.Utilities.BuildUI(dynamoJournal);
+            //        sample.ShowDialog();
+            //    }
+            //    catch (Exception e)
+            //    {
+            //        string messages = e.Message;
+            //        //suppress the warning something went wrong.
+            //    }
+            //}
+
             DynamoRevit dynamoRevit = new DynamoRevit();
-            
+           
             IDictionary<string, string> journalData = new Dictionary<string, string>
             {
                 {JournalKeys.ShowUiKey, false.ToString()},
@@ -110,11 +124,15 @@ namespace Relay
             };
             DynamoRevitCommandData dynamoRevitCommandData = new DynamoRevitCommandData
             {
-                Application = commandData.Application, JournalData = journalData
+                Application = commandData.Application,
+                JournalData = journalData
             };
+            
+            dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
 
-            return dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
-
+            //Force close this thing
+            DynamoRevit.RevitDynamoModel.Dispose();
+            return Result.Succeeded;
         }
     }
     [Transaction(TransactionMode.Manual)]
@@ -123,7 +141,7 @@ namespace Relay
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            TaskDialog aboutDialog = new TaskDialog($"Linked Details v.{Globals.RevitVersion}")
+            TaskDialog aboutDialog = new TaskDialog($"Relay v.{Globals.RevitVersion}")
             {
                 MainIcon = TaskDialogIcon.TaskDialogIconInformation,
                 MainInstruction =
