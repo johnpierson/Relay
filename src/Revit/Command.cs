@@ -111,12 +111,14 @@ namespace Relay
             //}
 
             DynamoRevit dynamoRevit = new DynamoRevit();
-           
+
+
+
             IDictionary<string, string> journalData = new Dictionary<string, string>
             {
                 {JournalKeys.ShowUiKey, false.ToString()},
                 {JournalKeys.AutomationModeKey, true.ToString()},
-                {JournalKeys.DynPathKey, dynamoJournal},
+                {JournalKeys.DynPathKey, ""},
                 {JournalKeys.DynPathExecuteKey, true.ToString()},
                 {JournalKeys.ForceManualRunKey, false.ToString()},
                 {JournalKeys.ModelShutDownKey, true.ToString()},
@@ -127,11 +129,13 @@ namespace Relay
                 Application = commandData.Application,
                 JournalData = journalData
             };
-            
+
             dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
 
-            //Force close this thing
-            DynamoRevit.RevitDynamoModel.Dispose();
+
+            DynamoRevit.RevitDynamoModel.OpenFileFromPath(dynamoJournal, true);
+            DynamoRevit.RevitDynamoModel.ForceRun();
+
             return Result.Succeeded;
         }
     }
