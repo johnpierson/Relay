@@ -9,7 +9,6 @@
     <Import_RootNamespace>Relay</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(MSBuildThisFileDirectory)App.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Command.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Methods\DynamoMethods.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Utilities\DynamoUtils.cs" />

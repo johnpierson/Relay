@@ -5,7 +5,7 @@ using System.Reflection;
 
 namespace Relay.Utilities
 {
-    public class Globals
+    public partial class Globals
     {
         public static readonly string Version =
             System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
