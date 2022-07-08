@@ -1,26 +1,18 @@
-on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-    - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-name: Upload Release Asset
-
+name: Create Archive
+on: [push]
 jobs:
-  zip-files:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: vimtor/action-zip@v1
-        with:
-          files: ./_Release/Revit2022
-          dest: Relay.zip
-      - name: "Build & test"
-        run: |
-          echo "done!"
-
-      - uses: "marvinpinto/action-automatic-releases@latest"
-        with:
-          repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          prerelease: false
-          files: |
-            Relay.zip
+    - uses: actions/checkout@master
+    - name: Archive Release
+      uses: thedoctor0/zip-release@main
+      with:
+        type: 'zip'
+        filename: 'Relay.zip'
+        path: './_Release/Revit2022'
+    - name: Upload Release
+      uses: ncipollo/release-action@v1
+      with:
+       artifacts: "Relay.zip"
+       token: ${{ secrets.GITHUB_TOKEN }}
