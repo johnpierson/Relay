@@ -90,6 +90,7 @@ namespace Relay
                 return Result.Failed;
             }
 
+
             return Methods.DynamoMethods.RunGraph(commandData.Application, dynamoJournal);
         }
     }
