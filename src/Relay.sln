@@ -7,10 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2022", "Relay.Re
 EndProject
 Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Relay.SharedProject", "Relay.SharedProject\Relay.SharedProject.shproj", "{18582996-4B34-4292-8701-933C581EBA74}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2021", "Relay.Revit2021\Relay.Revit2021.csproj", "{7967E429-A178-4869-9560-34346EC40997}"
+EndProject
 Global
 	GlobalSection(SharedMSBuildProjectFiles) = preSolution
 		Relay.SharedProject\Relay.SharedProject.projitems*{18582996-4b34-4292-8701-933c581eba74}*SharedItemsImports = 13
 		Relay.SharedProject\Relay.SharedProject.projitems*{3f0733a7-2c8d-429c-b8f7-617cb2065e45}*SharedItemsImports = 4
+		Relay.SharedProject\Relay.SharedProject.projitems*{7967e429-a178-4869-9560-34346ec40997}*SharedItemsImports = 4
 	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +24,10 @@ Global
 		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7967E429-A178-4869-9560-34346EC40997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7967E429-A178-4869-9560-34346EC40997}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7967E429-A178-4869-9560-34346EC40997}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7967E429-A178-4869-9560-34346EC40997}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

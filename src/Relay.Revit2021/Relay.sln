@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.1259
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay[2022]", "Relay[2022].csproj", "{3F0733A7-2C8D-429C-B8F7-617CB2065E45}"
+EndProject
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Relay", "..\_RelaySharedProject\Relay.shproj", "{18582996-4B34-4292-8701-933C581EBA74}"
+EndProject
+Global
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		..\_RelaySharedProject\Relay.projitems*{18582996-4b34-4292-8701-933c581eba74}*SharedItemsImports = 13
+		..\_RelaySharedProject\Relay.projitems*{3f0733a7-2c8d-429c-b8f7-617cb2065e45}*SharedItemsImports = 4
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {996A27C3-475C-4EBB-B548-1794058D95B2}
+	EndGlobalSection
+EndGlobal
