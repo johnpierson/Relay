@@ -16,3 +16,4 @@ jobs:
       with:
        artifacts: "Relay.zip"
        token: ${{ secrets.GITHUB_TOKEN }}
+       tag: v1.0.7
