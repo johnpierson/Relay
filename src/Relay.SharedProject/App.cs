@@ -18,6 +18,7 @@ namespace Relay
             return Result.Succeeded;
         }
 
+
         public Result OnShutdown(UIControlledApplication a)
         {
             return Result.Succeeded;
