@@ -12,10 +12,10 @@ jobs:
       uses: thedoctor0/zip-release@main
       with:
         type: 'zip'
-        filename: 'Relay.zip'
-        path: './_Release/Revit2022'
+        filename: 'RelayRelease.zip'
+        path: './_Release'
     - name: Upload Release
       uses: ncipollo/release-action@v1
       with:
-       artifacts: "Relay.zip"
+       artifacts: "RelayRelease.zip"
        token: ${{ secrets.GITHUB_TOKEN }}
