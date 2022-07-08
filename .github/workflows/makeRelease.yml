@@ -6,17 +6,26 @@ on:
 name: Upload Release Asset
 
 jobs:
-  build:
+  zip-files:
     runs-on: ubuntu-latest
     steps:
-    - name: Archive Release
-    - uses: actions/checkout@v2
-    - uses: vimtor/action-zip@v1
-      with:
+      - uses: actions/checkout@v2
+      - uses: vimtor/action-zip@v1
+        with:
           files: ./_Release/Revit2022
           dest: Relay.zip
-    - uses: "marvinpinto/action-automatic-releases@latest"
-      with:
+  tagged-release:
+    name: "Tagged Release"
+    runs-on: "ubuntu-latest"
+
+    steps:
+      # ...
+      - name: "Build & test"
+        run: |
+          echo "done!"
+
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
           files: |
