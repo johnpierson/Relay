@@ -1,5 +1,8 @@
-name: Create Archive
-on: [push]
+name: Create Release
+on: 
+  push:
+    tags:
+    - 'v*'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -16,4 +19,3 @@ jobs:
       with:
        artifacts: "Relay.zip"
        token: ${{ secrets.GITHUB_TOKEN }}
-       tag: v1.0.7
