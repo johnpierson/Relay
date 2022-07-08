@@ -1,0 +1,73 @@
+name: Release Revit Plugins
+
+on: 
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: "Build and release the Revit Plugins"
+    runs-on: windows-latest
+
+    steps:
+      - name: "Checkout Main Branch"
+        uses: actions/checkout@v2
+        
+      - name: Setup MSbuild
+        uses: microsoft/setup-msbuild@v1.0.2
+        
+      - name: Setup Nuget.exe
+        uses: nuget/setup-nuget@v1
+
+      - name: Nuget Restore
+        run: nuget restore
+        
+      - name: Create Code Signing Certificate
+        run: |
+          New-Item -ItemType directory -Path certificate
+          Set-Content -Path certificate\certificate.txt -Value '${{ secrets.CERTIFICATE }}'
+          certutil -decode certificate\certificate.txt certificate\certificate.pfx
+          
+      - name: MSBuild Revit 2021
+        working-directory: ProjectName.2021
+        run: |
+          msbuild /p:Configuration=Release
+      - name: Code Sign 2021
+        run: |
+          & 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe' sign /f certificate\certificate.pfx /p '${{ secrets.CERTIFICATE_PASS }}' /t http://timestamp.comodoca.com/authenticode ProjectName\bin\Release\AssemblyName.2021.dll
+      - name: MSBuild Revit 2020
+        working-directory: ProjectName.2020
+        run: |
+          msbuild /p:Configuration=Release
+ 
+      - name: Code Sign 2020
+        run: |
+          & 'C:/Program Files (x86)/Windows Kits/10/bin/10.0.17763.0/x86/signtool.exe' sign /f certificate\certificate.pfx /p '${{ secrets.CERTIFICATE_PASS }}' /t http://timestamp.comodoca.com/authenticode ProjectName\bin\Release\AssemblyName.2020.dll
+      - name: MSBuild Installer
+        working-directory: ProjectName.Setup
+        run: |
+          msbuild /p:Configuration=Release /p:BuildProjectReferences=false
+          
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+          
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ProjectName.Setup\bin\Release\ProjectName.Setup.msi
+          asset_name: ProjectName.Setup.msi
+          asset_content_type: application/octet-stream
