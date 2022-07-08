@@ -66,7 +66,6 @@ namespace Relay
             try
             {
                 if (!e.Item.Id.Contains("relay")) return;
-
                 //set our current graph based on the click on the ribbon item
                 Globals.CurrentGraphToRun = e.Item.Description;
             }
