@@ -9,18 +9,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@master
     - name: Archive Release
-      uses: thedoctor0/zip-release@main
+    - uses: actions/checkout@v2
+    - uses: vimtor/action-zip@v1
       with:
-        type: 'zip'
-        filename: 'Relay.zip'
-        directory: './_Release/Revit2022'
-      # ...
-    - name: "Build & test"
-      run: |
-        echo "done!"
-
+          files: ./_Release/Revit2022
+          dest: Relay.zip
     - uses: "marvinpinto/action-automatic-releases@latest"
       with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
