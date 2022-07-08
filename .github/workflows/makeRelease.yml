@@ -16,7 +16,7 @@ jobs:
         type: 'zip'
         filename: 'Relay.zip'
         directory: './_Release/Revit2022'
-        
+        path: './_Release/Relay.zip'
   tagged-release:
     name: "Tagged Release"
     runs-on: "ubuntu-latest"
