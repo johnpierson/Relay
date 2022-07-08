@@ -6,7 +6,6 @@ using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using Relay.Utilities;
 
-
 namespace Relay
 {
     class App : IExternalApplication
