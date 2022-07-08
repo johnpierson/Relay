@@ -191,9 +191,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Relay.addin" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="app.config" />
     <None Include="packages.config" />
   </ItemGroup>
@@ -204,7 +201,10 @@
     <PostBuildEvent>if $(ConfigurationName) == Debug if not exist "$(AppData)\Autodesk\REVIT\Addins\2022\Relay" mkdir "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
 
 if $(ConfigurationName) == Debug copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
-if $(ConfigurationName) == Debug copy "$(ProjectDir)Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2022"</PostBuildEvent>
+if $(ConfigurationName) == Debug copy "$(ProjectDir)Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2022"
+
+if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2022\Relay\Relay.dll"
+if $(ConfigurationName) == Release copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(ProjectDir)\..\..\_Release\Revit2022"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
