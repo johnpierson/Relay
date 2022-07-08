@@ -48,10 +48,9 @@ namespace Relay
             PushButtonData syncButtonData = new PushButtonData("SyncGraphs", "Sync\nGraphs",
                 Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.RefreshGraphs")
             {
-                Image = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Sync_16.png")))
+                Image = new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Sync_16.png"))),
+                ToolTip = "This will sync graphs from the default graph directory. Hold down left shift key to force large images"
             };
-            syncButtonData.ToolTip =
-                "This will sync graphs from the default graph directory. Hold down left shift key to force large images";
 
             setupRibbonPanel.AddStackedItems(aboutButtonData,syncButtonData);
             

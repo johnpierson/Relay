@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Parallax Team Inc.")]
 [assembly: AssemblyProduct("Relay Revit C# .NET Add-In")]
-[assembly: AssemblyCopyright("Copyright 2020 (C) Parallax Team Inc.")]
+[assembly: AssemblyCopyright("Copyright 2022 (C) Parallax Team Inc.")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
