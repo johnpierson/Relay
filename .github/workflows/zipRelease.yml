@@ -11,3 +11,4 @@ jobs:
         type: 'zip'
         filename: 'Relay.zip'
         directory: './_Release/Revit2022'
+        path: './_Release'
