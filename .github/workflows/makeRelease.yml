@@ -15,7 +15,9 @@ jobs:
         filename: 'RelayRelease.zip'
         path: './_Release'
     - name: Upload Release
-      uses: ncipollo/release-action@v1
+      uses: "marvinpinto/action-automatic-releases@latest"
       with:
-       artifacts: "RelayRelease.zip"
-       token: ${{ secrets.GITHUB_TOKEN }}
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          prerelease: false
+          files: |
+            RelayRelease.zip
