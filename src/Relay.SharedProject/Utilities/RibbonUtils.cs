@@ -94,8 +94,9 @@ namespace Relay.Utilities
 
                 description = relayGraph.Description != null ? $"{relayGraph.Description}\r\r[{fInfo.FullName}]" : $"[{fInfo.FullName}]";
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                var s = e.Message;
                 description = $"[{fInfo.FullName}]";
             }
            
