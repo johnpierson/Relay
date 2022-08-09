@@ -1,0 +1,11 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>Application Relay</Name>
+    <Assembly>Relay\Relay.dll</Assembly>
+    <FullClassName>Relay.App</FullClassName>
+    <ClientId>c7f32253-5715-42f7-909c-7a777400cce6</ClientId>
+    <VendorId>ParallaxTeam</VendorId>
+    <VendorDescription>Design Tech Unraveled http://designtechunraveled.com</VendorDescription>
+  </AddIn>
+</RevitAddIns>

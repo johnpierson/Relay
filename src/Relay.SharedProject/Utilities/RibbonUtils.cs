@@ -3,7 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
+using Dynamo.Graph.Workspaces;
+
+using UIFramework;
 using AW = Autodesk.Windows;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Relay.Classes;
 
 namespace Relay.Utilities
 {
@@ -25,14 +31,17 @@ namespace Relay.Utilities
             foreach (var file in dynPaths)
             {
                 FileInfo fInfo = new FileInfo(file);
+
+                string tooltip = GetDescription(fInfo);
+
                 string buttonName = $"relay{fInfo.Name.Replace(" ", "")}";
                 PushButtonData newButtonData = new PushButtonData(buttonName,
                     fInfo.Name.GenerateButtonText(),
                     Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
                 {
-                    ToolTip = fInfo.FullName
+                    ToolTip = tooltip,
                 };
-
+              
                 //set the images, if there are none, use default
                 string icon32 = fInfo.FullName.Replace(".dyn", "_32.png");
                 newButtonData.LargeImage = File.Exists(icon32)
@@ -43,6 +52,8 @@ namespace Relay.Utilities
                 newButtonData.Image = File.Exists(icon16)
                     ? new BitmapImage(new Uri(icon16))
                     : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo_16.png")));
+
+                TrySetContextualHelp(newButtonData, fInfo);
 
                 pushButtonDatas.Add(newButtonData);
             }
@@ -71,6 +82,45 @@ namespace Relay.Utilities
                 }
             }
 
+        }
+
+        private static string GetDescription(FileInfo fInfo)
+        {
+            string description;
+            try
+            {
+                string jsonString = File.ReadAllText(fInfo.FullName);
+                var relayGraph = JsonSerializer.Deserialize<RelayGraph>(jsonString);
+
+                description = relayGraph.Description != null ? $"{relayGraph.Description}\r\r[{fInfo.FullName}]" : $"[{fInfo.FullName}]";
+            }
+            catch (Exception)
+            {
+                description = $"[{fInfo.FullName}]";
+            }
+           
+            return description;
+        }
+
+        private static void TrySetContextualHelp(PushButtonData pushButtonData, FileInfo fInfo)
+        {
+            try
+            {
+                string jsonString = File.ReadAllText(fInfo.FullName);
+                var relayGraph = JsonSerializer.Deserialize<RelayGraph>(jsonString);
+
+                if (relayGraph.GraphDocumentationURL is null || string.IsNullOrWhiteSpace(relayGraph.GraphDocumentationURL))
+                {
+                    return;
+                }
+
+                ContextualHelp help = new ContextualHelp(ContextualHelpType.Url, relayGraph.GraphDocumentationURL);
+                pushButtonData.SetContextualHelp(help);
+            }
+            catch (Exception)
+            {
+                //don't set the help
+            }
         }
 
         public static AW.RibbonItem GetButton(string tabName, string panelName, string itemName)

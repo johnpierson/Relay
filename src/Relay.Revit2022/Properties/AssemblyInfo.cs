@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("Relay")]
-[assembly: AssemblyDescription("Relay allows you to add your Dynamo graphs to your Revit rubbon in an okay way.")]
+[assembly: AssemblyDescription("Relay allows you to add your Dynamo graphs to your Revit ribbon in an okay way.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Parallax Team Inc.")]
 [assembly: AssemblyProduct("Relay Revit C# .NET Add-In")]
@@ -31,5 +31,5 @@ using System.Runtime.InteropServices;
 // You can specify all the values or you can default the Build and Revision Numbers
 // by using the '*' as shown below:
 // [assembly: AssemblyVersion("1.0.*")]
-[assembly: AssemblyVersion("2022.1.0.2")]
-[assembly: AssemblyFileVersion("2022.1.0.2")]
+[assembly: AssemblyVersion("2022.1.2.0")]
+[assembly: AssemblyFileVersion("2022.1.2.0")]
