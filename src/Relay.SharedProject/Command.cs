@@ -15,65 +15,22 @@ using TaskDialogIcon = Autodesk.Revit.UI.TaskDialogIcon;
 namespace Relay
 {
     [Transaction(TransactionMode.Manual)]
+    [Regeneration(RegenerationOption.Manual)]
+    [Journaling(JournalingMode.NoCommandData)]
     public class RefreshGraphs : IExternalCommand
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             UIApplication uiapp = commandData.Application;
-            UIDocument uidoc = uiapp.ActiveUIDocument;
-            Application app = uiapp.Application;
-            Document doc = uidoc.Document;
 
             var relayTab = RibbonUtils.GetTab("Relay");
 
-            //create the panels for the sub directories
-            foreach (var directory in Directory.GetDirectories(Globals.RelayGraphs))
-            {
-                //the upper folder name (panel name)
-                DirectoryInfo dInfo = new DirectoryInfo(directory);
-
-                Autodesk.Revit.UI.RibbonPanel panelToUse;
-
-                //try to create the panel, if it already exists, just use it
-                try
-                {
-                    panelToUse = uiapp.CreateRibbonPanel("Relay", dInfo.Name);
-                }
-                catch (Exception)
-                {
-                    panelToUse = uiapp.GetRibbonPanels("Relay").First(p => p.Name.Equals(dInfo.Name));
-                }
-
-                //find the files that do not have a button yet
-                var toCreate = Directory.GetFiles(directory, "*.dyn")
-                    .Where(f => RibbonUtils.GetButton("Relay", dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
-
-                //if the user is holding down the left shift key, then force the large icons
-                bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
-
-                RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
-            }
-
-            //subscribe to the events of the button to associate the current DYN
-            Autodesk.Windows.ComponentManager.UIElementActivated -= ComponentManagerOnUIElementActivated;
-            Autodesk.Windows.ComponentManager.UIElementActivated += ComponentManagerOnUIElementActivated;
+            RibbonUtils.SyncGraphs(uiapp);
 
             return Result.Succeeded;
         }
 
-        private void ComponentManagerOnUIElementActivated(object sender, UIElementActivatedEventArgs e)
-        {
-            try
-            {
-                if (!e.Item.Id.Contains("relay")) return;
-                //set our current graph based on the click on the ribbon item
-                Globals.CurrentGraphToRun = e.Item.Description.GetStringBetweenCharacters('[', ']');
-            }
-            catch (Exception)
-            {
-                // suppress the error if it happens
-            }
-        }
+       
     }
 
     [Transaction(TransactionMode.Manual)]

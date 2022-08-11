@@ -216,7 +216,7 @@
     <PostBuildEvent>if $(ConfigurationName) == Debug if not exist "$(AppData)\Autodesk\REVIT\Addins\2022\Relay" mkdir "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
 
 if $(ConfigurationName) == Debug copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
-if $(ConfigurationName) == Debug copy "$(ProjectDir)Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2022"
+if $(ConfigurationName) == Debug copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2022"
 
 if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2022\Relay\Relay.dll"
 if $(ConfigurationName) == Release copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(ProjectDir)\..\..\_Release\Revit2022"</PostBuildEvent>

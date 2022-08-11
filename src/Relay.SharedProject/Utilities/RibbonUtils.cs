@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using Dynamo.Graph.Workspaces;
@@ -9,6 +10,7 @@ using UIFramework;
 using AW = Autodesk.Windows;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Windows.Input;
 using Relay.Classes;
 
 namespace Relay.Utilities
@@ -177,6 +179,41 @@ namespace Relay.Utilities
                 }
             }
             return null;
+        }
+
+        public static void SyncGraphs(UIApplication uiapp)
+        {
+            if (!Directory.Exists(Globals.RelayGraphs))
+            {
+                return;
+            }
+            //create the panels for the sub directories
+            foreach (var directory in Directory.GetDirectories(Globals.RelayGraphs))
+            {
+                //the upper folder name (panel name)
+                DirectoryInfo dInfo = new DirectoryInfo(directory);
+
+                Autodesk.Revit.UI.RibbonPanel panelToUse;
+
+                //try to create the panel, if it already exists, just use it
+                try
+                {
+                    panelToUse = uiapp.CreateRibbonPanel("Relay", dInfo.Name);
+                }
+                catch (Exception)
+                {
+                    panelToUse = uiapp.GetRibbonPanels("Relay").First(p => p.Name.Equals(dInfo.Name));
+                }
+
+                //find the files that do not have a button yet
+                var toCreate = Directory.GetFiles(directory, "*.dyn")
+                    .Where(f => RibbonUtils.GetButton("Relay", dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
+
+                //if the user is holding down the left shift key, then force the large icons
+                bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
+
+                RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
+            }
         }
 
     }
