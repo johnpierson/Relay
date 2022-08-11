@@ -8,7 +8,8 @@
    <img src="https://forthebadge.com/images/badges/as-seen-on-tv.svg">
 </p>
 
-<img src="https://img.shields.io/badge/License-GPLv3-blue.svg">
+<img src="https://img.shields.io/badge/License-GPLv3-blue.svg"/>
+<img src="https://img.shields.io/github/v/release/johnpierson/relay"/>
 
 ## Kudos
 Kudos to [HossZamani](https://github.com/HossZamani) and other users for the code shared on the Dynamo forum [here](https://forum.dynamobim.com/t/open-dynamo-in-background-while-c-add-in-executes/19535/8),and [here](https://forum.dynamobim.com/t/run-a-dyn-from-a-revit-add-in/14701). This code made it clear how the Dynamo journal command works.
