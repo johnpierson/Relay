@@ -14,7 +14,6 @@ namespace Relay.Methods
 
             DynamoRevit dynamoRevit = new DynamoRevit();
 
-
             IDictionary<string, string> journalData = new Dictionary<string, string>
             {
                 {JournalKeys.ShowUiKey, false.ToString()},
