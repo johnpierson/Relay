@@ -32,6 +32,11 @@ namespace Relay.Methods
 
             var result = dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
 
+//sorry folks, parks closed, the moose out front should have told you
+#if Revit2021Pro || Revit2022Pro || Revit2023Pro
+            Packages.ResolvePackages(DynamoRevit.RevitDynamoModel.PathManager.DefaultPackagesDirectory, dynamoJournal);
+#endif
+
             DynamoRevit.RevitDynamoModel.OpenFileFromPath(dynamoJournal, true);
             DynamoRevit.RevitDynamoModel.ForceRun();
 
