@@ -33,7 +33,6 @@ namespace Relay.Methods
 
             var result = dynamoRevit.ExecuteCommand(dynamoRevitCommandData);
 
-
             DynamoRevit.RevitDynamoModel.OpenFileFromPath(dynamoJournal, true);
             DynamoRevit.RevitDynamoModel.ForceRun();
 
