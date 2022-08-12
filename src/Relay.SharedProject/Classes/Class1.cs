@@ -6,5 +6,6 @@ namespace Relay.Classes
 {
     internal class Class1
     {
+
     }
 }
