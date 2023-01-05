@@ -23,8 +23,6 @@ namespace Relay
         {
             UIApplication uiapp = commandData.Application;
 
-            var relayTab = RibbonUtils.GetTab("Relay");
-
             RibbonUtils.SyncGraphs(uiapp);
 
             return Result.Succeeded;
