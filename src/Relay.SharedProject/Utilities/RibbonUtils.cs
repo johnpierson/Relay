@@ -183,36 +183,58 @@ namespace Relay.Utilities
 
         public static void SyncGraphs(UIApplication uiapp)
         {
-            if (!Directory.Exists(Globals.RelayGraphs))
+            // rescan the potential tab directory
+            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.ExecutingPath);
+
+            // no tabs found, exit
+            if (!Globals.PotentialTabDirectories.Any())
             {
                 return;
             }
-            //create the panels for the sub directories
-            foreach (var directory in Directory.GetDirectories(Globals.RelayGraphs))
+
+            // iterate through all sub folders
+            foreach (var potentialTabDirectory in Globals.PotentialTabDirectories)
             {
-                //the upper folder name (panel name)
-                DirectoryInfo dInfo = new DirectoryInfo(directory);
+                // current tab name
+                string potentialTab = new DirectoryInfo(potentialTabDirectory).Name;
 
-                Autodesk.Revit.UI.RibbonPanel panelToUse;
-
-                //try to create the panel, if it already exists, just use it
                 try
                 {
-                    panelToUse = uiapp.CreateRibbonPanel("Relay", dInfo.Name);
+                    // Create a custom ribbon tab
+                    uiapp.CreateRibbonTab(potentialTab);
                 }
-                catch (Exception)
+                catch
                 {
-                    panelToUse = uiapp.GetRibbonPanels("Relay").First(p => p.Name.Equals(dInfo.Name));
+                    // Might Already Exist
                 }
 
-                //find the files that do not have a button yet
-                var toCreate = Directory.GetFiles(directory, "*.dyn")
-                    .Where(f => RibbonUtils.GetButton("Relay", dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
+                //create the panels for the sub directories
+                foreach (var directory in Directory.GetDirectories(potentialTabDirectory))
+                {
+                    //the upper folder name (panel name)
+                    DirectoryInfo dInfo = new DirectoryInfo(directory);
 
-                //if the user is holding down the left shift key, then force the large icons
-                bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
+                    Autodesk.Revit.UI.RibbonPanel panelToUse;
 
-                RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
+                    //try to create the panel, if it already exists, just use it
+                    try
+                    {
+                        panelToUse = uiapp.CreateRibbonPanel(potentialTab, dInfo.Name);
+                    }
+                    catch (Exception)
+                    {
+                        panelToUse = uiapp.GetRibbonPanels(potentialTab).First(p => p.Name.Equals(dInfo.Name));
+                    }
+
+                    //find the files that do not have a button yet
+                    var toCreate = Directory.GetFiles(directory, "*.dyn")
+                        .Where(f => RibbonUtils.GetButton(potentialTab, dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
+
+                    //if the user is holding down the left shift key, then force the large icons
+                    bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
+
+                    RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
+                }
             }
         }
 

@@ -15,6 +15,21 @@ namespace Relay
     {
         public Result OnStartup(UIControlledApplication a)
         {
+            // parse the location for the potential tab name
+            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.ExecutingPath);
+            
+            if (Globals.PotentialTabDirectories.Any())
+            {
+                var potentialTabNames =
+                    Globals.PotentialTabDirectories.Select(d => new DirectoryInfo(d).Name).ToArray();
+                // Use the first folder for this first ribbon
+                Globals.RibbonTabName = potentialTabNames.First();
+            }
+            else
+            {
+                Globals.RibbonTabName = "Relay";
+            }
+
             // subscribe to ribbon click events
             Autodesk.Windows.ComponentManager.UIElementActivated += ComponentManagerOnUIElementActivated;
             // Attach custom event handler
@@ -50,7 +65,7 @@ namespace Relay
             try
             {
                 // Create a custom ribbon tab
-                a.CreateRibbonTab("Relay");
+                a.CreateRibbonTab(Globals.RibbonTabName);
             }
             catch
             {
@@ -59,7 +74,7 @@ namespace Relay
 
 
             //add our setup panel and button
-            var setupRibbonPanel = a.CreateRibbonPanel("Relay", "Setup");
+            var setupRibbonPanel = a.CreateRibbonPanel(Globals.RibbonTabName, "Setup");
 
             //if the about exists in the relay graphs location, use it, if not use the resource
             string localAboutImage = Path.Combine(Globals.RelayGraphs, "About_16.png");
