@@ -5,13 +5,13 @@ using System.Linq;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
 using Dynamo.Graph.Workspaces;
-
 using UIFramework;
 using AW = Autodesk.Windows;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Windows.Input;
 using Relay.Classes;
+using System.Reflection;
 
 namespace Relay.Utilities
 {
@@ -27,6 +27,7 @@ namespace Relay.Utilities
 
         public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths, bool forceLargeIcon = false)
         {
+            var assembly = Assembly.GetExecutingAssembly();
             var totalFiles = dynPaths.Length;
 
             List<PushButtonData> pushButtonDatas = new List<PushButtonData>();
@@ -48,12 +49,12 @@ namespace Relay.Utilities
                 string icon32 = fInfo.FullName.Replace(".dyn", "_32.png");
                 newButtonData.LargeImage = File.Exists(icon32)
                     ? new BitmapImage(new Uri(icon32))
-                    : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo_32.png")));
+                    : ImageUtils.LoadImage(assembly, "Dynamo_32.png");
 
                 string icon16 = fInfo.FullName.Replace(".dyn", "_16.png");
                 newButtonData.Image = File.Exists(icon16)
                     ? new BitmapImage(new Uri(icon16))
-                    : new BitmapImage(new Uri(Path.Combine(Globals.RelayGraphs, "Dynamo_16.png")));
+                    : ImageUtils.LoadImage(assembly, "Dynamo_16.png");
 
                 TrySetContextualHelp(newButtonData, fInfo);
 

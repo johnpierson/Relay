@@ -23,6 +23,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="$(MSBuildThisFileDirectory)Relay.addin" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Dynamo_16.png" />
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Dynamo_32.png" />
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Sync_16.png" />
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\About_16.png" />
   </ItemGroup>
