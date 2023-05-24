@@ -84,7 +84,6 @@ namespace Relay.Utilities
                         break;
                 }
             }
-
         }
 
         private static string GetDescription(FileInfo fInfo)
