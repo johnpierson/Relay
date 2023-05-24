@@ -13,7 +13,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{3F0733A7-2C8D-429C-B8F7-617CB2065E45}</ProjectGuid>
+    <ProjectGuid>{A96C9406-BF8C-4E3D-A531-463706D9D637}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Relay</RootNamespace>
@@ -26,74 +26,61 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;Revit2022</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;Revit2024</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
-    <StartProgram>$(ProgramW6432)\Autodesk\Revit 2020\Revit.exe</StartProgram>
+    <StartProgram>$(ProgramW6432)\Autodesk\Revit 2024\Revit.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;Revit2022</DefineConstants>
+    <DefineConstants>TRACE;Revit2024</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <StartAction>Program</StartAction>
-    <StartProgram>$(ProgramW6432)\Autodesk\Revit 2020\Revit.exe</StartProgram>
+    <StartProgram>$(ProgramW6432)\Autodesk\Revit 2024\Revit.exe</StartProgram>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="AdWindows, Version=3.1.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2022.1.0\lib\net48\AdWindows.dll</HintPath>
+    <Reference Include="AdWindows, Version=5.0.3.1, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2024.0.0\lib\net48\AdWindows.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="DesignScriptBuiltin, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DesignScriptBuiltin.dll</HintPath>
+    <Reference Include="DesignScriptBuiltin, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DesignScriptBuiltin.dll</HintPath>
+    </Reference>
+    <Reference Include="DSCPython, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DSCPython.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamoApplications, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DynamoApplications.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamoCore, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DynamoCore.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamoInstallDetective, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DynamoInstallDetective.dll</HintPath>
+    </Reference>
+    <Reference Include="DynamoRevitDS">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\AddIns\DynamoForRevit\Revit\DynamoRevitDS.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="DSCPython, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DSCPython.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="DynamoServices, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.DynamoServices.2.17.0.3472\lib\netstandard2.0\DynamoServices.dll</HintPath>
     </Reference>
-    <Reference Include="DSIronPython, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DSIronPython.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="DynamoShapeManager, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DynamoShapeManager.dll</HintPath>
     </Reference>
-    <Reference Include="DynamoApplications, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DynamoApplications.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="DynamoUnits, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.17.0.3472\lib\net48\DynamoUnits.dll</HintPath>
     </Reference>
-    <Reference Include="DynamoCore, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DynamoCore.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoInstallDetective, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DynamoInstallDetective.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoRevitDS, Version=2.12.0.5740, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Revit.2.12.0.5741\lib\DynamoRevitDS.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoServices, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.DynamoServices.2.12.1.8246\lib\net48\DynamoServices.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoShapeManager, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DynamoShapeManager.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoUnits, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.12.1.8246\lib\net48\DynamoUnits.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="DynamoUtilities, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\DynamoUtilities.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="DynamoUtilities, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\DynamoUtilities.dll</HintPath>
     </Reference>
     <Reference Include="Humanizer, Version=2.14.0.0, Culture=neutral, PublicKeyToken=979442b78dfc278e, processorArchitecture=MSIL">
       <HintPath>..\packages\Humanizer.Core.2.14.1\lib\netstandard2.0\Humanizer.dll</HintPath>
@@ -102,9 +89,6 @@
     <Reference Include="ILMerge, Version=1.23.0.0, Culture=neutral, PublicKeyToken=4d0e9a1cbec0d397, processorArchitecture=MSIL">
       <HintPath>..\packages\ILMerge.Fody.1.23.0\lib\net452\ILMerge.dll</HintPath>
       <Private>False</Private>
-    </Reference>
-    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.7.0.0\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Expression.Interactions, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Prism.4.1.0.0\lib\NET40\Microsoft.Expression.Interactions.dll</HintPath>
@@ -133,30 +117,28 @@
     </Reference>
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
-    <Reference Include="ProtoCore, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\ProtoCore.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="ProtoCore, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\ProtoCore.dll</HintPath>
     </Reference>
-    <Reference Include="ProtoGeometry, Version=2.12.0.5475, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.12.1.8246\lib\net48\ProtoGeometry.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="ProtoGeometry, Version=2.16.0.3360, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\DynamoVisualProgramming.ZeroTouchLibrary.2.17.0.3472\lib\net48\ProtoGeometry.dll</HintPath>
     </Reference>
-    <Reference Include="RevitAPI, Version=22.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2022.1.0\lib\net48\RevitAPI.dll</HintPath>
+    <Reference Include="RevitAPI, Version=24.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2024.0.0\lib\net48\RevitAPI.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitAPIUI, Version=22.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2022.1.0\lib\net48\RevitAPIUI.dll</HintPath>
+    <Reference Include="RevitAPIUI, Version=24.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2024.0.0\lib\net48\RevitAPIUI.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitNodes, Version=2.12.0.5740, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Revit.2.12.0.5741\lib\RevitNodes.dll</HintPath>
+    <Reference Include="RevitNodes">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\AddIns\DynamoForRevit\Revit\RevitNodes.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="RevitServices, Version=2.12.0.5740, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Revit.2.12.0.5741\lib\RevitServices.dll</HintPath>
+    <Reference Include="RevitServices">
+      <HintPath>C:\Program Files\Autodesk\Revit 2024\AddIns\DynamoForRevit\Revit\RevitServices.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="System" />
@@ -180,9 +162,6 @@
     <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.0.0\lib\net461\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
     </Reference>
-    <Reference Include="System.Text.Encodings.Web, Version=7.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
-      <HintPath>..\packages\System.Text.Encodings.Web.7.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
-    </Reference>
     <Reference Include="System.Text.Json, Version=7.0.0.2, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Text.Json.7.0.2\lib\net462\System.Text.Json.dll</HintPath>
       <Private>False</Private>
@@ -198,14 +177,13 @@
       <HintPath>..\packages\Prism.4.1.0.0\lib\NET40\System.Windows.Interactivity.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="UIFramework, Version=22.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2022.1.0\lib\net48\UIFramework.dll</HintPath>
+    <Reference Include="UIFramework, Version=24.0.0.0, Culture=neutral, processorArchitecture=AMD64">
+      <HintPath>..\packages\Revit_All_Main_Versions_API_x64.2024.0.0\lib\net48\UIFramework.dll</HintPath>
       <SpecificVersion>False</SpecificVersion>
       <Private>False</Private>
     </Reference>
-    <Reference Include="VMDataBridge, Version=2.12.1.8246, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\DynamoVisualProgramming.Core.2.12.1.8246\lib\net48\VMDataBridge.dll</HintPath>
-      <Private>False</Private>
+    <Reference Include="VMDataBridge, Version=2.17.0.3472, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\DynamoVisualProgramming.Core.2.17.0.3472\lib\net48\VMDataBridge.dll</HintPath>
     </Reference>
     <Reference Include="WindowsBase" />
   </ItemGroup>
@@ -218,17 +196,18 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="FodyWeavers.xml" />
+    <Content Include="images\logo.png" />
   </ItemGroup>
   <Import Project="..\Relay.SharedProject\Relay.SharedProject.projitems" Label="Shared" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>if $(ConfigurationName) == Debug if not exist "$(AppData)\Autodesk\REVIT\Addins\2022\Relay" mkdir "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
+    <PostBuildEvent>if $(ConfigurationName) == Debug if not exist "$(AppData)\Autodesk\REVIT\Addins\2024\Relay" mkdir "$(AppData)\Autodesk\REVIT\Addins\2024\Relay"
 
-if $(ConfigurationName) == Debug copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(AppData)\Autodesk\REVIT\Addins\2022\Relay"
-if $(ConfigurationName) == Debug copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2022"
+if $(ConfigurationName) == Debug copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(AppData)\Autodesk\REVIT\Addins\2024\Relay"
+if $(ConfigurationName) == Debug copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2024"
 
-if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2022\Relay\Relay.dll"
-if $(ConfigurationName) == Release copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(ProjectDir)\..\..\_Release\Revit2022"</PostBuildEvent>
+if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2024\Relay\Relay.dll"
+if $(ConfigurationName) == Release copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(ProjectDir)\..\..\_Release\Revit2024"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.

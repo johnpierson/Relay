@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2021", "Relay.Re
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2023", "Relay.Revit2023\Relay.Revit2023.csproj", "{A96CA421-9515-4552-8C62-04101C8EF806}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2024", "Relay.Revit2024\Relay.Revit2024.csproj", "{A96C9406-BF8C-4E3D-A531-463706D9D637}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{A96CA421-9515-4552-8C62-04101C8EF806}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A96CA421-9515-4552-8C62-04101C8EF806}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A96CA421-9515-4552-8C62-04101C8EF806}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -40,6 +46,7 @@ Global
 		Relay.SharedProject\Relay.SharedProject.projitems*{18582996-4b34-4292-8701-933c581eba74}*SharedItemsImports = 13
 		Relay.SharedProject\Relay.SharedProject.projitems*{3f0733a7-2c8d-429c-b8f7-617cb2065e45}*SharedItemsImports = 4
 		Relay.SharedProject\Relay.SharedProject.projitems*{7967e429-a178-4869-9560-34346ec40997}*SharedItemsImports = 4
+		Relay.SharedProject\Relay.SharedProject.projitems*{a96c9406-bf8c-4e3d-a531-463706d9d637}*SharedItemsImports = 4
 		Relay.SharedProject\Relay.SharedProject.projitems*{a96ca421-9515-4552-8c62-04101c8ef806}*SharedItemsImports = 4
 	EndGlobalSection
 EndGlobal
