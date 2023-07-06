@@ -29,4 +29,7 @@
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\Sync_16.png" />
     <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\About_16.png" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="$(MSBuildThisFileDirectory)Resources\System.Text.Json.dll" />
+  </ItemGroup>
 </Project>
