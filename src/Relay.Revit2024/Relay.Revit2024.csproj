@@ -206,6 +206,7 @@
 if $(ConfigurationName) == Debug copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(AppData)\Autodesk\REVIT\Addins\2024\Relay"
 if $(ConfigurationName) == Debug copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(AppData)\Autodesk\REVIT\Addins\2024"
 
+if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2024\Relay\System.Text.Json.dll"
 if $(ConfigurationName) == Release copy "$(ProjectDir)$(OutputPath)Relay.dll" "$(ProjectDir)..\..\_Release\Revit2024\Relay\Relay.dll"
 if $(ConfigurationName) == Release copy "$(ProjectDir)\..\Relay.SharedProject\Relay.addin" "$(ProjectDir)\..\..\_Release\Revit2024"</PostBuildEvent>
   </PropertyGroup>
