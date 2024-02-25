@@ -39,6 +39,22 @@ namespace Relay.Methods
             var dynamoRevitApplication = loadedAssemblies
                 .FirstOrDefault(a => a.FullName.Contains("DynamoRevitDS"));
 
+            if (dynamoRevitApplication is null)
+            {
+                TaskDialog mainDialog = new TaskDialog("Relay for Revit");
+
+                mainDialog.MainInstruction = "Relay encountered an error.";
+                mainDialog.MainContent =
+                    "Dynamo for Revit seems to not be loaded properly. Please submit a bug on Github";
+                mainDialog.FooterText =
+                    "<a href=\"https://github.com/johnpierson/Relay/issues \">"
+                    + "Click here to submit a bug report.</a>";
+                TaskDialogResult tResult = mainDialog.Show();
+               
+
+                return Result.Failed;
+            }
+
             //create our own instances of these things using reflection. Shoutout to BirdTools for helping with this.
             object dInst = dynamoRevitApplication.CreateInstance("Dynamo.Applications.DynamoRevit");
             object dta = dynamoRevitApplication.CreateInstance("Dynamo.Applications.DynamoRevitCommandData");
