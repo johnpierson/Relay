@@ -1,52 +1,55 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.1.32319.34
+VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2022", "Relay.Revit2022\Relay.Revit2022.csproj", "{3F0733A7-2C8D-429C-B8F7-617CB2065E45}"
-EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "Relay.SharedProject", "Relay.SharedProject\Relay.SharedProject.shproj", "{18582996-4B34-4292-8701-933C581EBA74}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2021", "Relay.Revit2021\Relay.Revit2021.csproj", "{7967E429-A178-4869-9560-34346EC40997}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2023", "Relay.Revit2023\Relay.Revit2023.csproj", "{A96CA421-9515-4552-8C62-04101C8EF806}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Revit2024", "Relay.Revit2024\Relay.Revit2024.csproj", "{A96C9406-BF8C-4E3D-A531-463706D9D637}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay", "Relay.csproj", "{25D2130A-176D-450E-9DAB-C8E70564998D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
-		Debug|Any CPU = Debug|Any CPU
-		Release|Any CPU = Release|Any CPU
+		Debug R20|Any CPU = Debug R20|Any CPU
+		Debug R21|Any CPU = Debug R21|Any CPU
+		Debug R22|Any CPU = Debug R22|Any CPU
+		Debug R23|Any CPU = Debug R23|Any CPU
+		Debug R24|Any CPU = Debug R24|Any CPU
+		Debug R25|Any CPU = Debug R25|Any CPU
+		Release R20|Any CPU = Release R20|Any CPU
+		Release R21|Any CPU = Release R21|Any CPU
+		Release R22|Any CPU = Release R22|Any CPU
+		Release R23|Any CPU = Release R23|Any CPU
+		Release R24|Any CPU = Release R24|Any CPU
+		Release R25|Any CPU = Release R25|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3F0733A7-2C8D-429C-B8F7-617CB2065E45}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7967E429-A178-4869-9560-34346EC40997}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7967E429-A178-4869-9560-34346EC40997}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7967E429-A178-4869-9560-34346EC40997}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7967E429-A178-4869-9560-34346EC40997}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A96CA421-9515-4552-8C62-04101C8EF806}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A96CA421-9515-4552-8C62-04101C8EF806}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A96CA421-9515-4552-8C62-04101C8EF806}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A96CA421-9515-4552-8C62-04101C8EF806}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A96C9406-BF8C-4E3D-A531-463706D9D637}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R20|Any CPU.ActiveCfg = Debug R20|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R20|Any CPU.Build.0 = Debug R20|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R21|Any CPU.ActiveCfg = Debug R21|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R21|Any CPU.Build.0 = Debug R21|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R22|Any CPU.ActiveCfg = Debug R22|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R22|Any CPU.Build.0 = Debug R22|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R23|Any CPU.ActiveCfg = Debug R23|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R23|Any CPU.Build.0 = Debug R23|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R24|Any CPU.ActiveCfg = Debug R24|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R24|Any CPU.Build.0 = Debug R24|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R25|Any CPU.ActiveCfg = Debug R25|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Debug R25|Any CPU.Build.0 = Debug R25|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R20|Any CPU.ActiveCfg = Release R20|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R20|Any CPU.Build.0 = Release R20|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R21|Any CPU.ActiveCfg = Release R21|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R21|Any CPU.Build.0 = Release R21|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R22|Any CPU.ActiveCfg = Release R22|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R22|Any CPU.Build.0 = Release R22|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R23|Any CPU.ActiveCfg = Release R23|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R23|Any CPU.Build.0 = Release R23|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R24|Any CPU.ActiveCfg = Release R24|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R24|Any CPU.Build.0 = Release R24|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R25|Any CPU.ActiveCfg = Release R25|Any CPU
+		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R25|Any CPU.Build.0 = Release R25|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {3DD6E604-4ED7-4152-BBB9-7D17FCFB6CB4}
-	EndGlobalSection
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		Relay.SharedProject\Relay.SharedProject.projitems*{18582996-4b34-4292-8701-933c581eba74}*SharedItemsImports = 13
-		Relay.SharedProject\Relay.SharedProject.projitems*{3f0733a7-2c8d-429c-b8f7-617cb2065e45}*SharedItemsImports = 4
-		Relay.SharedProject\Relay.SharedProject.projitems*{7967e429-a178-4869-9560-34346ec40997}*SharedItemsImports = 4
-		Relay.SharedProject\Relay.SharedProject.projitems*{a96c9406-bf8c-4e3d-a531-463706d9d637}*SharedItemsImports = 4
-		Relay.SharedProject\Relay.SharedProject.projitems*{a96ca421-9515-4552-8c62-04101c8ef806}*SharedItemsImports = 4
+		SolutionGuid = {C5A070F6-1EA7-44E6-8E4F-E0D82E97A27C}
 	EndGlobalSection
 EndGlobal
