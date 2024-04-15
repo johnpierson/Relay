@@ -1,0 +1,141 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <UseWPF>true</UseWPF>
+        <LangVersion>latest</LangVersion>
+        <PlatformTarget>x64</PlatformTarget>
+        <ImplicitUsings>true</ImplicitUsings>
+        <Configurations>Debug R20;Debug R21;Debug R22;Debug R23;Debug R24;Debug R25</Configurations>
+        <Configurations>$(Configurations);Release R20;Release R21;Release R22;Release R23;Release R24;Release R25</Configurations>
+    </PropertyGroup>
+
+    <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
+        <DebugType>full</DebugType>
+        <DebugSymbols>true</DebugSymbols>
+        <DefineConstants>$(DefineConstants);DEBUG</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('Release'))">
+        <Optimize>true</Optimize>
+        <DebugType>none</DebugType>
+        <DefineConstants>$(DefineConstants);RELEASE</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R20'))">
+        <RevitVersion>2020</RevitVersion>
+        <TargetFramework>net48</TargetFramework>
+        <DefineConstants>$(DefineConstants);R20</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R21'))">
+        <RevitVersion>2021</RevitVersion>
+        <TargetFramework>net48</TargetFramework>
+        <DefineConstants>$(DefineConstants);R21</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER;R21_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R22'))">
+        <RevitVersion>2022</RevitVersion>
+        <TargetFramework>net48</TargetFramework>
+        <DefineConstants>$(DefineConstants);R22</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER;R21_OR_GREATER;R22_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R23'))">
+        <RevitVersion>2023</RevitVersion>
+        <TargetFramework>net48</TargetFramework>
+        <DefineConstants>$(DefineConstants);R23</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER;R21_OR_GREATER;R22_OR_GREATER;R23_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R24'))">
+        <RevitVersion>2024</RevitVersion>
+        <TargetFramework>net48</TargetFramework>
+        <DefineConstants>$(DefineConstants);R24</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER;R21_OR_GREATER;R22_OR_GREATER;R23_OR_GREATER;R24_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+    <PropertyGroup Condition="$(Configuration.Contains('R25'))">
+        <RevitVersion>2025</RevitVersion>
+        <TargetFramework>net8.0-windows</TargetFramework>
+        <DefineConstants>$(DefineConstants);R25</DefineConstants>
+        <DefineConstants>$(DefineConstants);R20_OR_GREATER;R21_OR_GREATER;R22_OR_GREATER;R23_OR_GREATER;R24_OR_GREATER;R25_OR_GREATER</DefineConstants>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Version>$(RevitVersion)</Version>
+        <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <StartAction>Program</StartAction>
+        <StartProgram>C:\Program Files\Autodesk\Revit $(RevitVersion)\Revit.exe</StartProgram>
+        <StartArguments>/language ENG</StartArguments>
+        <AssemblyVersion>$(RevitVersion).1.5.0</AssemblyVersion>
+        <FileVersion>$(RevitVersion).1.5.0</FileVersion>
+        <Description>Relay adds DYNs to the ribbon in an okay way.</Description>
+        <Copyright>2024 - John Pierson</Copyright>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="Resources\About_16.png" />
+      <None Remove="Resources\Dynamo_16.png" />
+      <None Remove="Resources\Dynamo_32.png" />
+      <None Remove="Resources\Humanizer.dll" />
+      <None Remove="Resources\Sync_16.png" />
+      <None Remove="Resources\System.Text.Json.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="Resources\About_16.png" />
+      <EmbeddedResource Include="Resources\Dynamo_16.png" />
+      <EmbeddedResource Include="Resources\Dynamo_32.png" />
+      <EmbeddedResource Include="Resources\Humanizer.dll" />
+      <EmbeddedResource Include="Resources\Sync_16.png" />
+      <EmbeddedResource Include="Resources\System.Text.Json.dll" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Humanizer" Version="2.14.1" />
+      <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).*-*" />
+      <PackageReference Include="System.Text.Json" Version="8.0.3" />
+		<Reference Include="DynamoPackages">
+			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\DynamoApplications.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="DynamoPackages">
+			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\DynamoCore.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+		<Reference Include="DynamoPackages">
+			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\Revit\DynamoRevitDS.dll</HintPath>
+			<Private>False</Private>
+		</Reference>
+    </ItemGroup>
+
+    <Target Name="CopyFiles" AfterTargets="CoreBuild">
+        <ItemGroup>
+            <RootItem Include="$(ProjectDir)*.addin" />
+            <AddinItem Include="$(TargetDir)**\*" />
+        </ItemGroup>
+
+        <PropertyGroup>
+            <RootDir>bin\$(RevitVersion) $(Configuration)\</RootDir>
+            <AddinDir>$(RootDir)$(AssemblyName)\</AddinDir>
+        </PropertyGroup>
+
+        <Copy SourceFiles="@(RootItem)" DestinationFolder="$(RootDir)" />
+        <Copy SourceFiles="@(AddinItem)" DestinationFolder="$(AddinDir)\%(RecursiveDir)" />
+
+        <ItemGroup>
+            <AddinFiles Include="$(RootDir)**\*" />
+        </ItemGroup>
+
+        <Copy SourceFiles="@(AddinFiles)" DestinationFolder="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\%(RecursiveDir)" />
+    </Target>
+	<PropertyGroup />
+    <Target Name="DeleteFiles" AfterTargets="Clean">
+        <RemoveDir Directories="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\$(ProjectName)" />
+        <Delete Files="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\$(ProjectName).addin" />
+    </Target>
+    <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+      <Exec Command="copy &quot;$(ProjectDir)$(OutputPath)System.Text.Json.dll&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)\Relay\System.Text.Json.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)$(OutputPath)Relay.dll&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)\Relay\Relay.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)\Relay.addin&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)&quot;" />
+    </Target>
+
+</Project>
