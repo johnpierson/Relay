@@ -67,8 +67,8 @@
         <StartAction>Program</StartAction>
         <StartProgram>C:\Program Files\Autodesk\Revit $(RevitVersion)\Revit.exe</StartProgram>
         <StartArguments>/language ENG</StartArguments>
-        <AssemblyVersion>$(RevitVersion).1.5.0</AssemblyVersion>
-        <FileVersion>$(RevitVersion).1.5.0</FileVersion>
+        <AssemblyVersion>$(RevitVersion).1.5.1</AssemblyVersion>
+        <FileVersion>$(RevitVersion).1.5.1</FileVersion>
         <Description>Relay adds DYNs to the ribbon in an okay way.</Description>
         <Copyright>2024 - John Pierson</Copyright>
     </PropertyGroup>
