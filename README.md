@@ -21,7 +21,7 @@ https://www.notion.so/parallaxteam/Relay-for-Revit-6732550b41d34bce8edc518c0d0e4
 This app is provided "as-is" and open source. 
 
 ## License
-This code is licensed primarily under [BSD 3-Clause](https://github.com/johnpierson/Relay/blob/master/LICENSE).
+This code is licensed primarily under [GNU Lesser General Public License v3 (LGPL-3.0)](https://github.com/johnpierson/Relay/blob/master/LICENSE).
 
 By using this project, you agree to the terms and conditions of the license. A simplified summary of this license is available at [TLDRLegal](https://tldrlegal.com/license/gnu-lesser-general-public-license-v3-(lgpl-3)).
 
