@@ -180,7 +180,7 @@ namespace Relay.Utilities
             }
             return null;
         }
-
+     
         public static void SyncGraphs(UIApplication uiapp)
         {
             // rescan the potential tab directory
@@ -208,8 +208,23 @@ namespace Relay.Utilities
                     // Might Already Exist
                 }
 
+
+                //check if a specific Revit version directory exists, if it does use that.
+                string[] graphDirectories = Directory.GetDirectories(potentialTabDirectory);
+                var versionDirectories = Directory.GetDirectories(potentialTabDirectory);
+
+                if (versionDirectories.Any(d => new DirectoryInfo(d).Name.Contains(Globals.RevitVersion)))
+                {
+                    var versionDirectory = versionDirectories.FirstOrDefault(d => new DirectoryInfo(d).Name.Contains(Globals.RevitVersion));
+
+                    if (versionDirectory != null)
+                    {
+                        graphDirectories = Directory.GetDirectories(versionDirectory);
+                    }
+                }
+
                 //create the panels for the sub directories
-                foreach (var directory in Directory.GetDirectories(potentialTabDirectory))
+                foreach (var directory in graphDirectories)
                 {
                     //the upper folder name (panel name)
                     DirectoryInfo dInfo = new DirectoryInfo(directory);

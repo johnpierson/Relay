@@ -14,6 +14,9 @@ namespace Relay
     {
         public Result OnStartup(UIControlledApplication a)
         {
+            //set the Revit version for reuse
+            Globals.RevitVersion = a.ControlledApplication.VersionNumber;
+
             // parse the location for the potential tab name
             Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.ExecutingPath);
             
