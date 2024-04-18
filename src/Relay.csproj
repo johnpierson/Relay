@@ -93,16 +93,9 @@
 
     <ItemGroup>
       <PackageReference Include="Humanizer" Version="2.14.1" />
+        <PackageReference Include="DynamoVisualProgramming.Revit" Version="3.*" />
       <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).*-*" />
       <PackageReference Include="System.Text.Json" Version="8.0.3" />
-		<Reference Include="DynamoPackages">
-			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\DynamoApplications.dll</HintPath>
-			<Private>False</Private>
-		</Reference>
-		<Reference Include="DynamoPackages">
-			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\DynamoCore.dll</HintPath>
-			<Private>False</Private>
-		</Reference>
 		<Reference Include="DynamoPackages">
 			<HintPath>C:\Program Files\Autodesk\Revit $(RevitVersion)\AddIns\DynamoForRevit\Revit\DynamoRevitDS.dll</HintPath>
 			<Private>False</Private>
