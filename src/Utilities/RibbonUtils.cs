@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using System.IO;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.UI;
-using UIFramework;
 using AW = Autodesk.Windows;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using System.Windows.Input;
 using Relay.Classes;
 using System.Reflection;
@@ -16,6 +11,7 @@ namespace Relay.Utilities
 {
     class RibbonUtils
     {
+
         public static List<List<T>> SplitList<T>(List<T> me, int size = 50)
         {
             var list = new List<List<T>>();
@@ -32,25 +28,45 @@ namespace Relay.Utilities
             List<PushButtonData> pushButtonDatas = new List<PushButtonData>();
             foreach (var file in dynPaths)
             {
+                //generate file info to get the datas
                 FileInfo fInfo = new FileInfo(file);
 
                 string tooltip = GetDescription(fInfo);
 
-                string buttonName = $"relay{fInfo.Name.Replace(" ", "")}";
+                string buttonName = $"relay{fInfo.Name.Replace(" ", "")}?{Guid.NewGuid()}";
+
                 PushButtonData newButtonData = new PushButtonData(buttonName,
                     fInfo.Name.GenerateButtonText(),
                     Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
                 {
-                    ToolTip = tooltip,
+                    ToolTip = tooltip
                 };
               
                 //set the images, if there are none, use default
                 string icon32 = fInfo.FullName.Replace(".dyn", "_32.png");
+
+                //trying out using temp icons to enable button hiding and deleting later
+                if (File.Exists(icon32))
+                {
+                    var temp32 = Path.Combine(Globals.UserTemp, $"{Guid.NewGuid().ToString()}.png");
+                    File.Copy(icon32, temp32);
+                    icon32 = temp32;
+                }
+               
                 newButtonData.LargeImage = File.Exists(icon32)
                     ? new BitmapImage(new Uri(icon32))
                     : ImageUtils.LoadImage(assembly, "Dynamo_32.png");
 
                 string icon16 = fInfo.FullName.Replace(".dyn", "_16.png");
+
+                //trying out using temp icons to enable button hiding and deleting later
+                if (File.Exists(icon16))
+                {
+                    var temp16 = Path.Combine(Globals.UserTemp, $"{Guid.NewGuid().ToString()}.png");
+                    File.Copy(icon16, temp16);
+                    icon16 = temp16;
+                }
+
                 newButtonData.Image = File.Exists(icon16)
                     ? new BitmapImage(new Uri(icon16))
                     : ImageUtils.LoadImage(assembly, "Dynamo_16.png");
@@ -58,6 +74,11 @@ namespace Relay.Utilities
                 TrySetContextualHelp(newButtonData, fInfo);
 
                 pushButtonDatas.Add(newButtonData);
+            }
+
+            if (!panelToUse.Visible)
+            {
+                panelToUse.Visible = true;
             }
 
             if (forceLargeIcon)
@@ -76,11 +97,80 @@ namespace Relay.Utilities
                 switch (buttonGroup.Count)
                 {
                     case 2:
-                        panelToUse.AddStackedItems(buttonGroup[0], buttonGroup[1]);
+                        var stack = panelToUse.AddStackedItems(buttonGroup[0], buttonGroup[1]);
                         break;
                     case 1:
                         panelToUse.AddItem(buttonGroup[0]);
                         break;
+                }
+            }
+        }
+
+        public static void HideUnused()
+        {
+            AW.RibbonControl ribbon = AW.ComponentManager.Ribbon;
+
+            foreach (AW.RibbonTab tab in ribbon.Tabs)
+            {
+                if (tab.Name == Globals.RibbonTabName)
+                {
+                    foreach (var ribbonPanel in tab.Panels)
+                    {
+                        if (ribbonPanel.Source.Title != "Setup")
+                        {
+                            //hide every button that no longer has a dyn backing it
+                            foreach (var ribbonItem in ribbonPanel.Source.Items)
+                            {
+                               if(ribbonItem.Description is null) continue;
+                               AW.RibbonItem item = ribbonItem;
+                               if (ribbonItem is AW.RibbonButton ribbonButton)
+                               {
+                                  item = ribbonButton;
+                               }
+
+                               
+                                var dynPath = ribbonItem.Description.GetStringBetweenCharacters('[', ']');
+
+                                if (!File.Exists(dynPath))
+                                {
+                                    item.IsVisible = false;
+                                }
+                                
+                            }
+
+                            //now hide the panel if all the buttons are gone
+                            if (ribbonPanel.Source.Items.All(i => !i.IsVisible))
+                            {
+                                ribbonPanel.IsVisible = false;
+                            }
+                         
+                        }
+                    }
+                }
+            }
+        }
+        public static void ClearRibbon()
+        {
+            AW.RibbonControl ribbon = AW.ComponentManager.Ribbon;
+
+            foreach (AW.RibbonTab tab in ribbon.Tabs)
+            {
+                if (tab.Name == Globals.RibbonTabName)
+                {
+                    foreach (var ribbonPanel in tab.Panels)
+                    {
+                        if (ribbonPanel.Source.Title != "Setup")
+                        {
+                            //hide every button
+                            foreach (var ribbonItem in ribbonPanel.Source.Items)
+                            {
+                                ribbonItem.IsVisible = false;
+                            }
+
+                            //now hide the panel
+                            ribbonPanel.IsVisible = false;
+                        }
+                    }
                 }
             }
         }
@@ -137,9 +227,36 @@ namespace Relay.Utilities
                     {
                         if (panel.Source.Title == panelName)
                         {
-                            return panel.FindItem("CustomCtrl_%CustomCtrl_%"
-                                                  + tabName + "%" + panelName + "%" + itemName,
-                                true) as AW.RibbonItem;
+                            AW.RibbonItem ribbonItem = null;
+                            foreach (var item in panel.Source.Items)
+                            {
+                                if (item is AW.RibbonRowPanel ribbonPanel)
+                                {
+                                    foreach (var rItem in ribbonPanel.Items)
+                                    {
+                                        if (rItem.Id.Contains(itemName))
+                                        {
+                                            ribbonItem = rItem;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (item.Id.Contains(itemName))
+                                {
+                                    ribbonItem = item;
+                                    break;
+                                }
+                            }
+
+                            if (ribbonItem == null) return null;
+
+                            if (!ribbonItem.IsVisible)
+                            {
+                                return null;
+                            }
+
+                            return ribbonItem;
                         }
                     }
                 }
@@ -183,7 +300,7 @@ namespace Relay.Utilities
         public static void SyncGraphs(UIApplication uiapp)
         {
             // rescan the potential tab directory
-            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.ExecutingPath);
+            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.BasePath);
 
             // no tabs found, exit
             if (!Globals.PotentialTabDirectories.Any())
@@ -241,13 +358,26 @@ namespace Relay.Utilities
                     }
 
                     //find the files that do not have a button yet
-                    var toCreate = Directory.GetFiles(directory, "*.dyn")
-                        .Where(f => RibbonUtils.GetButton(potentialTab, dInfo.Name, $"relay{new FileInfo(f).Name.Replace(" ", "")}") == null).ToArray();
+                   
+                    List<string> toCreate = new List<string>();
+
+                    foreach (var file in Directory.GetFiles(directory, "*.dyn"))
+                    {
+                        if (RibbonUtils.GetButton(potentialTab, dInfo.Name, $"relay{new FileInfo(file).Name.Replace(" ", "")}") == null)
+                        {
+                            toCreate.Add(file);
+                        }
+                    }
+
 
                     //if the user is holding down the left shift key, then force the large icons
                     bool forceLargeIcons = Keyboard.IsKeyDown(Key.LeftShift);
 
-                    RibbonUtils.AddItems(panelToUse, toCreate, forceLargeIcons);
+                    if (toCreate.Any())
+                    {
+                        RibbonUtils.AddItems(panelToUse, toCreate.ToArray(), forceLargeIcons);
+
+                    }
                 }
             }
         }

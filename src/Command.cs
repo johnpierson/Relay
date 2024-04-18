@@ -1,13 +1,7 @@
-using System;
-using System.IO;
-using System.Linq;
-using System.Windows.Input;
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
-using Autodesk.Windows;
 using Relay.Utilities;
-using Application = Autodesk.Revit.ApplicationServices.Application;
 using TaskDialog = Autodesk.Revit.UI.TaskDialog;
 using TaskDialogCommonButtons = Autodesk.Revit.UI.TaskDialogCommonButtons;
 using TaskDialogIcon = Autodesk.Revit.UI.TaskDialogIcon;
@@ -23,7 +17,17 @@ namespace Relay
         {
             UIApplication uiapp = commandData.Application;
 
+#if DEBUG
+            //if (Globals.ResetRibbonOnSync)
+            //{
+            //    RibbonUtils.ClearRibbon();
+            //}
+#endif
+        
             RibbonUtils.SyncGraphs(uiapp);
+            RibbonUtils.HideUnused();
+
+
 
             return Result.Succeeded;
         }

@@ -1,11 +1,10 @@
-using System;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Windows.Media.Imaging;
 using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
+using Relay.Classes;
 using Relay.Utilities;
 
 namespace Relay
@@ -17,8 +16,32 @@ namespace Relay
             //set the Revit version for reuse
             Globals.RevitVersion = a.ControlledApplication.VersionNumber;
 
+            //read the ini file
+            if (File.Exists(Path.Combine(Globals.ExecutingPath,"RelaySettings.ini")))
+            {
+                try
+                {
+                    var relayIni = new RelayIniFile();
+                    var path = relayIni.Read("Path", "Settings");
+                    var resetRibbon = relayIni.Read("ResetRibbon", "Settings");
+                    //it the path is default, read that
+                    Globals.BasePath = path.ToLower().Equals("default") ? Globals.ExecutingPath : path;
+
+                    Globals.ResetRibbonOnSync = bool.Parse(resetRibbon);
+                }
+                //you screwed up the path mapping, sorry this tool is using the default then
+                catch (Exception)
+                {
+                    Globals.BasePath = Globals.ExecutingPath;
+                }
+            }
+            else
+            {
+                Globals.BasePath = Globals.ExecutingPath;
+            }
+
             // parse the location for the potential tab name
-            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.ExecutingPath);
+            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.BasePath);
             
             if (Globals.PotentialTabDirectories.Any())
             {

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Autodesk.Revit.UI;
+﻿using Autodesk.Revit.UI;
 using Dynamo.Applications;
 using Relay.Utilities;
 
