@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="https://github.com/ParallaxTeam/Relay/blob/master/_resources/relayLogo.png" alt="Relay" width="400">
+  <img src="https://github.com/johnpierson/Relay/blob/master/_resources/relayLogoNew.png" alt="Relay" width="400">
 
 </h1>
 <h4 align="center">Relay is a custom Revit add-in that allows you to add Dynamo graphs to your Ribbon.</h4>
