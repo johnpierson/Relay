@@ -49,7 +49,7 @@ namespace Relay.Utilities
                 //trying out using temp icons to enable button hiding and deleting later
                 if (File.Exists(icon32))
                 {
-                    var temp32 = Path.Combine(Globals.UserTemp, $"{Guid.NewGuid().ToString()}.png");
+                    var temp32 = Path.Combine(Globals.UserTemp, $"relayImage{Guid.NewGuid()}.png");
                     File.Copy(icon32, temp32);
                     icon32 = temp32;
                 }
@@ -63,7 +63,7 @@ namespace Relay.Utilities
                 //trying out using temp icons to enable button hiding and deleting later
                 if (File.Exists(icon16))
                 {
-                    var temp16 = Path.Combine(Globals.UserTemp, $"{Guid.NewGuid().ToString()}.png");
+                    var temp16 = Path.Combine(Globals.UserTemp, $"relayImage{Guid.NewGuid()}.png");
                     File.Copy(icon16, temp16);
                     icon16 = temp16;
                 }

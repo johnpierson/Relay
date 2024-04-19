@@ -13,6 +13,8 @@ namespace Relay
     {
         public Result OnStartup(UIControlledApplication a)
         {
+            CleanupOldImages();
+
             //set the Revit version for reuse
             Globals.RevitVersion = a.ControlledApplication.VersionNumber;
 
@@ -26,8 +28,6 @@ namespace Relay
                     var resetRibbon = relayIni.Read("ResetRibbon", "Settings");
                     //it the path is default, read that
                     Globals.BasePath = path.ToLower().Equals("default") ? Globals.ExecutingPath : path;
-
-                    Globals.ResetRibbonOnSync = bool.Parse(resetRibbon);
                 }
                 //you screwed up the path mapping, sorry this tool is using the default then
                 catch (Exception)
@@ -157,6 +157,24 @@ namespace Relay
             catch (Exception)
             {
                 // suppress the error if it happens
+            }
+        }
+
+        internal void CleanupOldImages()
+        {
+            var relayImages = Directory.GetFiles(Globals.UserTemp, "relayImage*.png");
+
+            foreach (var image in relayImages)
+            {
+                try
+                {
+                    File.Delete(image);
+                }
+                catch (Exception)
+                {
+                    //do nothing
+                }
+
             }
         }
     }

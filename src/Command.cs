@@ -17,13 +17,6 @@ namespace Relay
         {
             UIApplication uiapp = commandData.Application;
 
-#if DEBUG
-            //if (Globals.ResetRibbonOnSync)
-            //{
-            //    RibbonUtils.ClearRibbon();
-            //}
-#endif
-        
             RibbonUtils.SyncGraphs(uiapp);
             RibbonUtils.HideUnused();
 
