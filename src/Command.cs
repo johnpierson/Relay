@@ -27,8 +27,6 @@ namespace Relay
             RibbonUtils.SyncGraphs(uiapp);
             RibbonUtils.HideUnused();
 
-
-
             return Result.Succeeded;
         }
 

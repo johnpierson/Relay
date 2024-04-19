@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Reflection;
+using Autodesk.Revit.UI;
 
 namespace Relay.Utilities
 {
@@ -23,6 +24,9 @@ namespace Relay.Utilities
         public static string CurrentGraphToRun { get; set; } = "";
 
         public static bool ResetRibbonOnSync { get; set; } = false;
+
+        public static Dictionary<string, RibbonItem> RelayButtons = new Dictionary<string, RibbonItem>();
+        public static Dictionary<string, List<RibbonItem>> RelayPanels = new Dictionary<string, List<RibbonItem>>();
 
     }
 }

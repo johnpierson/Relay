@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Windows.Input;
 using Relay.Classes;
 using System.Reflection;
+using Autodesk.Revit.DB.Electrical;
 
 namespace Relay.Utilities
 {
@@ -90,6 +91,8 @@ namespace Relay.Utilities
                 return;
             }
 
+            List<RibbonItem> createdButtons = new List<RibbonItem>();
+
             var splitButtons = SplitList(pushButtonDatas, 2);
 
             foreach (var buttonGroup in splitButtons)
@@ -98,83 +101,70 @@ namespace Relay.Utilities
                 {
                     case 2:
                         var stack = panelToUse.AddStackedItems(buttonGroup[0], buttonGroup[1]);
+                        createdButtons.Add(stack[0]);
+                        createdButtons.Add(stack[1]);
                         break;
                     case 1:
-                        panelToUse.AddItem(buttonGroup[0]);
+                        var singleButton = panelToUse.AddItem(buttonGroup[0]);
+                        createdButtons.Add(singleButton);
                         break;
                 }
             }
+
+            foreach (var ribbonItem in createdButtons)
+            {
+                Globals.RelayButtons.Add(ribbonItem.ToolTip.GetStringBetweenCharacters('[', ']'), ribbonItem);
+            }
+
+            //now add the buttons to our panel dictionary for later
+            if (Globals.RelayPanels.ContainsKey(panelToUse.Name))
+            {
+                Globals.RelayPanels[panelToUse.Name] = createdButtons;
+            }
+            else
+            {
+                Globals.RelayPanels.Add(panelToUse.Name, createdButtons);
+            }
+          
         }
 
         public static void HideUnused()
         {
-            AW.RibbonControl ribbon = AW.ComponentManager.Ribbon;
-
-            foreach (AW.RibbonTab tab in ribbon.Tabs)
+            foreach (var key in Globals.RelayButtons.Keys)
             {
-                if (tab.Name == Globals.RibbonTabName)
+                Globals.RelayButtons.TryGetValue(key, out RibbonItem ribbonItem);
+
+                if (ribbonItem != null)
                 {
-                    foreach (var ribbonPanel in tab.Panels)
+                    var path = ribbonItem.ToolTip.GetStringBetweenCharacters('[', ']');
+
+                    //check if the file exists, if not, hide the button and remove the button from our dictionary
+                    if (File.Exists(path)) continue;
+                    ribbonItem.Visible = false;
+
+                    Globals.RelayButtons.Remove(key);
+                }
+            }
+
+            //now hide empty panels if there are any
+            foreach (var panel in Globals.RelayPanels.Keys)
+            {
+                var worked = Globals.RelayPanels.TryGetValue(panel, out List<RibbonItem> ribbonItems);
+                if (worked)
+                {
+                    var allHidden = ribbonItems.All(r => !r.Visible);
+
+                    if (allHidden)
                     {
-                        if (ribbonPanel.Source.Title != "Setup")
-                        {
-                            //hide every button that no longer has a dyn backing it
-                            foreach (var ribbonItem in ribbonPanel.Source.Items)
-                            {
-                               if(ribbonItem.Description is null) continue;
-                               AW.RibbonItem item = ribbonItem;
-                               if (ribbonItem is AW.RibbonButton ribbonButton)
-                               {
-                                  item = ribbonButton;
-                               }
-
-                               
-                                var dynPath = ribbonItem.Description.GetStringBetweenCharacters('[', ']');
-
-                                if (!File.Exists(dynPath))
-                                {
-                                    item.IsVisible = false;
-                                }
-                                
-                            }
-
-                            //now hide the panel if all the buttons are gone
-                            if (ribbonPanel.Source.Items.All(i => !i.IsVisible))
-                            {
-                                ribbonPanel.IsVisible = false;
-                            }
-                         
-                        }
+                        //k, all the buttons are hidden. get the panel to hide now
+                        var ribbonPanel = GetPanel(Globals.RibbonTabName, panel);
+                        ribbonPanel.IsVisible = false;
                     }
+                    
                 }
             }
         }
-        public static void ClearRibbon()
-        {
-            AW.RibbonControl ribbon = AW.ComponentManager.Ribbon;
-
-            foreach (AW.RibbonTab tab in ribbon.Tabs)
-            {
-                if (tab.Name == Globals.RibbonTabName)
-                {
-                    foreach (var ribbonPanel in tab.Panels)
-                    {
-                        if (ribbonPanel.Source.Title != "Setup")
-                        {
-                            //hide every button
-                            foreach (var ribbonItem in ribbonPanel.Source.Items)
-                            {
-                                ribbonItem.IsVisible = false;
-                            }
-
-                            //now hide the panel
-                            ribbonPanel.IsVisible = false;
-                        }
-                    }
-                }
-            }
-        }
-
+        
         private static string GetDescription(FileInfo fInfo)
         {
             string description;
@@ -227,36 +217,9 @@ namespace Relay.Utilities
                     {
                         if (panel.Source.Title == panelName)
                         {
-                            AW.RibbonItem ribbonItem = null;
-                            foreach (var item in panel.Source.Items)
-                            {
-                                if (item is AW.RibbonRowPanel ribbonPanel)
-                                {
-                                    foreach (var rItem in ribbonPanel.Items)
-                                    {
-                                        if (rItem.Id.Contains(itemName))
-                                        {
-                                            ribbonItem = rItem;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (item.Id.Contains(itemName))
-                                {
-                                    ribbonItem = item;
-                                    break;
-                                }
-                            }
-
-                            if (ribbonItem == null) return null;
-
-                            if (!ribbonItem.IsVisible)
-                            {
-                                return null;
-                            }
-
-                            return ribbonItem;
+                            return panel.FindItem("CustomCtrl_%CustomCtrl_%"
+                                                  + tabName + "%" + panelName + "%" + itemName,
+                                true) as AW.RibbonItem;
                         }
                     }
                 }
@@ -351,10 +314,13 @@ namespace Relay.Utilities
                     try
                     {
                         panelToUse = uiapp.CreateRibbonPanel(potentialTab, dInfo.Name);
+                        panelToUse.Title = dInfo.Name;
                     }
                     catch (Exception)
                     {
                         panelToUse = uiapp.GetRibbonPanels(potentialTab).First(p => p.Name.Equals(dInfo.Name));
+
+                        panelToUse.Visible = true;
                     }
 
                     //find the files that do not have a button yet
@@ -363,7 +329,11 @@ namespace Relay.Utilities
 
                     foreach (var file in Directory.GetFiles(directory, "*.dyn"))
                     {
-                        if (RibbonUtils.GetButton(potentialTab, dInfo.Name, $"relay{new FileInfo(file).Name.Replace(" ", "")}") == null)
+                        FileInfo fInfo = new FileInfo(file);
+
+                        var dynPath = fInfo.FullName;
+
+                        if (!Globals.RelayButtons.ContainsKey(dynPath))
                         {
                             toCreate.Add(file);
                         }
@@ -376,7 +346,6 @@ namespace Relay.Utilities
                     if (toCreate.Any())
                     {
                         RibbonUtils.AddItems(panelToUse, toCreate.ToArray(), forceLargeIcons);
-
                     }
                 }
             }
