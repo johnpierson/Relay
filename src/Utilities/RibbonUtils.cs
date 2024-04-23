@@ -7,6 +7,8 @@ using System.Windows.Input;
 using Relay.Classes;
 using System.Reflection;
 using Autodesk.Revit.DB.Electrical;
+using Autodesk.Windows;
+using RibbonItem = Autodesk.Revit.UI.RibbonItem;
 
 namespace Relay.Utilities
 {
@@ -86,14 +88,45 @@ namespace Relay.Utilities
             {
                 foreach (var pushButton in pushButtonDatas)
                 {
-                    panelToUse.AddItem(pushButton);
+                    var newButton = panelToUse.AddItem(pushButton);
+                    //add to our global list
+                    Globals.RelayButtons.Add(newButton.ToolTip.GetStringBetweenCharacters('[', ']'), newButton);
                 }
                 return;
             }
 
+            //check if the DYN only has a large image available, if so, make it large only
+            List<PushButtonData> remainingToCreate = new List<PushButtonData>();
+            foreach (var pushButton in pushButtonDatas)
+            {
+                try
+                {
+                    string dynPath = pushButton.ToolTip.GetStringBetweenCharacters('[', ']');
+                    string smolImage = dynPath.Replace(".dyn", "_16.png");
+
+                    if (!File.Exists(smolImage))
+                    {
+                        var newButton = panelToUse.AddItem(pushButton);
+ 
+                        //add to our global list
+                        Globals.RelayButtons.Add(newButton.ToolTip.GetStringBetweenCharacters('[', ']'), newButton);
+                    }
+                    else
+                    {
+                        remainingToCreate.Add(pushButton);
+                    }
+                }
+                catch (Exception)
+                {
+                    //weird error, ignore.
+                }
+              
+            }
+
+
             List<RibbonItem> createdButtons = new List<RibbonItem>();
 
-            var splitButtons = SplitList(pushButtonDatas, 2);
+            var splitButtons = SplitList(remainingToCreate, 2);
 
             foreach (var buttonGroup in splitButtons)
             {
