@@ -15,7 +15,7 @@
 Kudos to [HossZamani](https://github.com/HossZamani) and other users for the code shared on the Dynamo forum [here](https://forum.dynamobim.com/t/open-dynamo-in-background-while-c-add-in-executes/19535/8),and [here](https://forum.dynamobim.com/t/run-a-dyn-from-a-revit-add-in/14701). This code made it clear how the Dynamo journal command works.
 
 ## Documentation
-https://www.notion.so/parallaxteam/Relay-for-Revit-6732550b41d34bce8edc518c0d0e47b9
+https://johnpierson.github.io/Relay/
 
 ## Price
 This app is provided "as-is" and open source. 
