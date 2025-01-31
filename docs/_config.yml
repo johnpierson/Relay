@@ -1,4 +1,4 @@
 remote_theme: pages-themes/minimal@v0.2.0
 plugins:
 - jekyll-remote-theme # add this line to the plugins list if you already have one
-logo: ./_resources/relayLogo.png
+logo: https://raw.githubusercontent.com/johnpierson/Relay/refs/heads/master/_resources/relayLogo.png
