@@ -71,7 +71,7 @@
         <AssemblyVersion>$(RevitVersion).1.6.0</AssemblyVersion>
         <FileVersion>$(RevitVersion).1.6.0</FileVersion>
         <Description>Relay adds DYNs to the ribbon in an okay way.</Description>
-        <Copyright>2024 - John Pierson</Copyright>
+        <Copyright>2025 - John Pierson</Copyright>
     </PropertyGroup>
 
     <ItemGroup>
