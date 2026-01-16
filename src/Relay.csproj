@@ -71,7 +71,7 @@
         <AssemblyVersion>$(RevitVersion).1.6.0</AssemblyVersion>
         <FileVersion>$(RevitVersion).1.6.0</FileVersion>
         <Description>Relay adds DYNs to the ribbon in an okay way.</Description>
-        <Copyright>2025 - John Pierson</Copyright>
+        <Copyright>2026 - John Pierson</Copyright>
     </PropertyGroup>
 
     <ItemGroup>
@@ -129,7 +129,7 @@
         <Delete Files="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\$(ProjectName).addin" />
     </Target>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <Exec Command="copy &quot;$(ProjectDir)$(OutputPath)System.Text.Json.dll&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)\Relay\System.Text.Json.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)$(OutputPath)Relay.dll&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)\Relay\Relay.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)\Relay.addin&quot; &quot;D:\repos_john\Relay\_Release\Revit$(RevitVersion)&quot;" />
+      <Exec Command="copy &quot;$(ProjectDir)$(OutputPath)System.Text.Json.dll&quot; &quot;$(ProjectDir)..\_Release\Revit$(RevitVersion)\Relay\System.Text.Json.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)$(OutputPath)Relay.dll&quot; &quot;$(ProjectDir)..\_Release\Revit$(RevitVersion)\Relay\Relay.dll&quot;&#xD;&#xA;copy &quot;$(ProjectDir)\Relay.addin&quot; &quot;$(ProjectDir)..\_Release\Revit$(RevitVersion)&quot;" />
     </Target>
 
 </Project>
