@@ -30,8 +30,9 @@ namespace Relay
                     Globals.BasePath = path.ToLower().Equals("default") ? Globals.ExecutingPath : path;
                 }
                 //you screwed up the path mapping, sorry this tool is using the default then
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to read RelaySettings.ini: {ex.Message}");
                     Globals.BasePath = Globals.ExecutingPath;
                 }
             }
@@ -67,15 +68,15 @@ namespace Relay
 
         private void ControlledApplication_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)
         {
-            var syncGraphsId = RevitCommandId.LookupCommandId("CustomCtrl_%CustomCtrl_%Relay%Setup%SyncGraphs");
-
             if (sender is UIApplication uiapp)
             {
                 RibbonUtils.SyncGraphs(uiapp);
             }
             else
             {
-                uiapp = new UIApplication(sender as Application);
+                var application = sender as Application;
+                if (application == null) return;
+                uiapp = new UIApplication(application);
                 RibbonUtils.SyncGraphs(uiapp);
             }
         }
@@ -170,9 +171,9 @@ namespace Relay
                 {
                     File.Delete(image);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    //do nothing
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary image '{image}': {ex.Message}");
                 }
 
             }

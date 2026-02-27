@@ -116,9 +116,9 @@ namespace Relay.Utilities
                         remainingToCreate.Add(pushButton);
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    //weird error, ignore.
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to create ribbon button: {ex.Message}");
                 }
               
             }
