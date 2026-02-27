@@ -6,12 +6,14 @@ namespace Relay.Utilities
 {
     class DynamoUtils
     {
-        public static void SetToAutomatic(string filePath)
+        public static string SetToAutomatic(string filePath)
         {
-           string text = File.ReadAllText(filePath);
+           string text = File.ReadAllText(filePath, System.Text.Encoding.UTF8);
            text = text.Replace(@"""RunType"": ""Manual"",", @"""RunType"": ""Automatic"",");
 
-           File.WriteAllText(filePath,text);
+           string tempPath = Path.Combine(Path.GetTempPath(), $"relay_{Guid.NewGuid()}.dyn");
+           File.WriteAllText(tempPath, text, System.Text.Encoding.UTF8);
+           return tempPath;
         }
 
         public static void InitializeDynamoRevit(ExternalCommandData commandData)
