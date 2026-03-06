@@ -140,13 +140,22 @@ namespace Relay.Utilities
             return input;
         }
 
+        /// <summary>
+        /// Returns the lowercase, assembly-stripped type name from a Dynamo ConcreteType string
+        /// (e.g. <c>"CoreNodeModels.Input.DoubleSlider, CoreNodeModels"</c> → <c>"corenodemodels.input.doubleslider"</c>).
+        /// </summary>
+        private static string NormalizeTypeName(string concreteType)
+        {
+            if (string.IsNullOrEmpty(concreteType)) return string.Empty;
+            return concreteType.Split(',')[0].Trim().ToLowerInvariant();
+        }
+
         private static DynamoInputType DetermineInputType(string concreteType)
         {
             if (string.IsNullOrEmpty(concreteType))
                 return DynamoInputType.Unknown;
 
-            // Normalise: take only the type name part (before the assembly comma)
-            var typeName = concreteType.Split(',')[0].Trim().ToLowerInvariant();
+            var typeName = NormalizeTypeName(concreteType);
 
             if (typeName.Contains("doubleslider") || typeName.Contains("doublenuminput"))
                 return DynamoInputType.Number;
@@ -221,7 +230,7 @@ namespace Relay.Utilities
 
         private static void ApplyValueToNode(JsonNode node, object value, string concreteType)
         {
-            var typeName = concreteType.Split(',')[0].Trim().ToLowerInvariant();
+            var typeName = NormalizeTypeName(concreteType);
 
             if (typeName.Contains("codeblock"))
             {

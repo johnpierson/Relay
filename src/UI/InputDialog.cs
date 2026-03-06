@@ -250,7 +250,7 @@ namespace Relay.UI
                 textBox.Text = FormatNumber(slider.Value, isInteger);
             };
 
-            textBox.LostFocus += (_, __) =>
+            textBox.LostFocus += (sender, e) =>
             {
                 if (double.TryParse(textBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
                     slider.Value = Math.Max(min, Math.Min(max, parsed));
