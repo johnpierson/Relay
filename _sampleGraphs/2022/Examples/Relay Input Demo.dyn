@@ -1,0 +1,98 @@
+{
+  "Uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "IsCustomNode": false,
+  "Description": "Demonstrates Relay's dynamic input UI. Nodes marked as 'IsSetAsInput' will show a dialog before the graph runs.",
+  "Name": "Relay Input Demo",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [],
+  "Outputs": [],
+  "Nodes": [
+    {
+      "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+      "NodeType": "StringInputNode",
+      "InputValue": "Hello from Relay!",
+      "Id": "aa000000-0000-0000-0000-000000000001",
+      "IsSetAsInput": true,
+      "IsSetAsOutput": false,
+      "Excluded": false,
+      "ShowGeometry": true,
+      "Name": "Message",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "aa000000-out-0000-0000-000000000001",
+          "Name": "",
+          "Description": "String",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Creates a string."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.DoubleSlider, CoreNodeModels",
+      "NodeType": "NumberInputNode",
+      "NumberType": "Double",
+      "Maximum": 100.0,
+      "MaximumStep": 10.0,
+      "Minimum": 0.0,
+      "Step": 1.0,
+      "InputValue": 50.0,
+      "Id": "aa000000-0000-0000-0000-000000000002",
+      "IsSetAsInput": true,
+      "IsSetAsOutput": false,
+      "Excluded": false,
+      "ShowGeometry": true,
+      "Name": "Number Value",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "aa000000-out-0000-0000-000000000002",
+          "Name": "",
+          "Description": "Double",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A slider that produces numeric values."
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Input.BoolSelector, CoreNodeModels",
+      "NodeType": "BooleanInputNode",
+      "InputValue": true,
+      "Id": "aa000000-0000-0000-0000-000000000003",
+      "IsSetAsInput": true,
+      "IsSetAsOutput": false,
+      "Excluded": false,
+      "ShowGeometry": true,
+      "Name": "Enable Feature",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "aa000000-out-0000-0000-000000000003",
+          "Name": "",
+          "Description": "bool",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "A boolean toggle."
+    }
+  ],
+  "Connectors": [],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "RunType": "Manual",
+  "RunPeriod": "1000"
+}
