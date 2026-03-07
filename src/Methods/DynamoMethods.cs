@@ -1,5 +1,7 @@
-﻿using Autodesk.Revit.UI;
+﻿using System.IO;
+using Autodesk.Revit.UI;
 using Dynamo.Applications;
+using Relay.UI;
 using Relay.Utilities;
 
 namespace Relay.Methods
@@ -8,8 +10,52 @@ namespace Relay.Methods
     {
         internal static Result RunGraph(UIApplication uiApp, string dynamoJournal)
         {
-            //create a temporary copy of the graph set to automatic. this is required for running Dynamo UI-Less
-            string tempGraphPath = DynamoUtils.SetToAutomatic(dynamoJournal);
+            // Step 1: Parse the Dynamo graph for input nodes marked as IsSetAsInput
+            var graphInputs = DynamoInputParser.ParseGraphInputs(dynamoJournal);
+
+            // Step 2: If inputs exist, present a WPF dialog so the user can supply values
+            string sourceGraphPath = dynamoJournal;
+            string modifiedGraphPath = null;
+
+            if (graphInputs.HasInputs)
+            {
+                var dialog = new InputDialog(graphInputs);
+
+                // Attempt to parent the dialog to the Revit main window
+                try
+                {
+                    var helper = new System.Windows.Interop.WindowInteropHelper(dialog);
+                    helper.Owner = uiApp.MainWindowHandle;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Could not set dialog owner: {ex.Message}");
+                }
+
+                bool? dialogResult = dialog.ShowDialog();
+
+                if (dialog.WasCancelled || dialogResult != true)
+                    return Result.Cancelled;
+
+                // Step 3: Write user values back to a modified temp graph
+                modifiedGraphPath = DynamoInputParser.ApplyUserValues(dynamoJournal, dialog.UserValues);
+                sourceGraphPath = modifiedGraphPath;
+            }
+
+            // Step 4: Create a temporary copy of the (possibly modified) graph set to Automatic run mode.
+            // This is required for running Dynamo UI-less.
+            string tempGraphPath = DynamoUtils.SetToAutomatic(sourceGraphPath);
+
+            // The intermediate modified file (if any) is no longer needed once SetToAutomatic has
+            // written its own temp copy.
+            if (modifiedGraphPath != null && modifiedGraphPath != dynamoJournal)
+            {
+                try { File.Delete(modifiedGraphPath); }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete intermediate graph file '{modifiedGraphPath}': {ex.Message}");
+                }
+            }
 
             //DynamoRevit dynamoRevit = new DynamoRevit();
 
