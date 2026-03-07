@@ -264,11 +264,11 @@ namespace Relay.Utilities
 
             switch (typeString.ToLowerInvariant())
             {
-                case "number":  return DynamoInputType.Number;
+                case "number": return DynamoInputType.Number;
                 case "integer": return DynamoInputType.Integer;
                 case "boolean": return DynamoInputType.Boolean;
-                case "string":  return DynamoInputType.String;
-                default:        return DynamoInputType.Unknown;
+                case "string": return DynamoInputType.String;
+                default: return DynamoInputType.Unknown;
             }
         }
 
@@ -311,8 +311,8 @@ namespace Relay.Utilities
             {
                 switch (inputValue.ValueKind)
                 {
-                    case JsonValueKind.True:   return true;
-                    case JsonValueKind.False:  return false;
+                    case JsonValueKind.True: return true;
+                    case JsonValueKind.False: return false;
                     case JsonValueKind.Number:
                         return type == DynamoInputType.Integer
                             ? (object)inputValue.GetInt32()
