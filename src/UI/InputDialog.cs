@@ -16,6 +16,12 @@ namespace Relay.UI
         private readonly DynamoGraphInputs _graphInputs;
 
         /// <summary>
+        /// Pre-filled values to restore when the dialog is reopened after a Revit pick.
+        /// Keyed by node ID.
+        /// </summary>
+        private readonly Dictionary<string, object> _prefilledValues;
+
+        /// <summary>
         /// Control instances keyed by the corresponding node ID, used to collect
         /// values when the user clicks "Run Graph".
         /// </summary>
@@ -32,6 +38,30 @@ namespace Relay.UI
         public bool WasCancelled { get; private set; } = true;
 
         /// <summary>
+        /// <c>true</c> when the user clicked "Select in Revit" on a selection node,
+        /// requesting the dialog to close so a Revit <c>PickObject</c> can be performed.
+        /// </summary>
+        public bool NeedsPick { get; private set; }
+
+        /// <summary>
+        /// Node ID of the selection input for which a pick is needed.
+        /// Valid only when <see cref="NeedsPick"/> is <c>true</c>.
+        /// </summary>
+        public string PickInputId { get; private set; }
+
+        /// <summary>
+        /// <c>true</c> when the picker input allows selecting multiple elements.
+        /// </summary>
+        public bool PickMultiple { get; private set; }
+
+        /// <summary>
+        /// Snapshot of values entered so far, saved when the user clicks "Select in Revit"
+        /// so that they can be restored when the dialog is shown again.
+        /// </summary>
+        public Dictionary<string, object> PartialValues { get; private set; } =
+            new Dictionary<string, object>();
+
+        /// <summary>
         /// Mapping from node ID to the value entered/selected by the user.
         /// Populated only when <see cref="WasCancelled"/> is <c>false</c>.
         /// </summary>
@@ -42,9 +72,15 @@ namespace Relay.UI
         // Constructor
         // -----------------------------------------------------------------------
 
-        public InputDialog(DynamoGraphInputs graphInputs)
+        /// <param name="graphInputs">The parsed input definitions from the graph.</param>
+        /// <param name="prefilledValues">
+        /// Optional values to pre-populate controls with (used when reopening after a pick).
+        /// </param>
+        public InputDialog(DynamoGraphInputs graphInputs,
+                           Dictionary<string, object> prefilledValues = null)
         {
             _graphInputs = graphInputs;
+            _prefilledValues = prefilledValues ?? new Dictionary<string, object>();
             BuildUI();
         }
 
@@ -170,26 +206,39 @@ namespace Relay.UI
                     return BuildNumericControl(input, isInteger: false);
                 case DynamoInputType.Integer:
                     return BuildNumericControl(input, isInteger: true);
+                case DynamoInputType.Dropdown:
+                    return BuildDropdownControl(input);
+                case DynamoInputType.Selection:
+                    return BuildSelectionControl(input);
                 case DynamoInputType.String:
                 default:
                     return BuildTextBox(input);
             }
         }
 
-        private static CheckBox BuildCheckBox(DynamoInputDefinition input)
+        private CheckBox BuildCheckBox(DynamoInputDefinition input)
         {
+            // Honour any pre-filled value from a previous dialog instance
+            bool isChecked = _prefilledValues.TryGetValue(input.Id, out var pv) && pv is bool pvBool
+                ? pvBool
+                : input.DefaultValue is bool b && b;
+
             return new CheckBox
             {
-                IsChecked = input.DefaultValue is bool b && b,
+                IsChecked = isChecked,
                 VerticalAlignment = VerticalAlignment.Center
             };
         }
 
-        private static TextBox BuildTextBox(DynamoInputDefinition input)
+        private TextBox BuildTextBox(DynamoInputDefinition input)
         {
+            var text = _prefilledValues.TryGetValue(input.Id, out var pv)
+                ? pv?.ToString() ?? string.Empty
+                : input.DefaultValue?.ToString() ?? string.Empty;
+
             return new TextBox
             {
-                Text = input.DefaultValue?.ToString() ?? string.Empty,
+                Text = text,
                 Padding = new Thickness(4),
                 Height = 28,
                 VerticalContentAlignment = VerticalAlignment.Center
@@ -197,13 +246,130 @@ namespace Relay.UI
         }
 
         /// <summary>
+        /// Builds a <see cref="ComboBox"/> for a <see cref="DynamoInputType.Dropdown"/> node.
+        /// When the node's items list is empty (e.g. a dynamic Revit dropdown whose items
+        /// could not be populated at parse time) the control degrades to an editable combo
+        /// showing the currently stored selection string.
+        /// </summary>
+        private ComboBox BuildDropdownControl(DynamoInputDefinition input)
+        {
+            var combo = new ComboBox
+            {
+                Height = 28,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                IsEditable = input.Items.Count == 0 // editable fallback when no item list
+            };
+
+            if (input.Items.Count > 0)
+            {
+                foreach (var item in input.Items)
+                    combo.Items.Add(item);
+
+                // Restore from pre-filled values or definition
+                int selectedIndex = -1;
+                if (_prefilledValues.TryGetValue(input.Id, out var pv) && pv is DropdownValue pvDv)
+                    selectedIndex = pvDv.SelectedIndex;
+                else
+                    selectedIndex = input.SelectedIndex;
+
+                if (selectedIndex >= 0 && selectedIndex < combo.Items.Count)
+                    combo.SelectedIndex = selectedIndex;
+                else if (!string.IsNullOrEmpty(input.SelectedString))
+                    combo.SelectedItem = input.SelectedString;
+            }
+            else
+            {
+                // Editable ComboBox with just the current selection string as a hint
+                var currentString = _prefilledValues.TryGetValue(input.Id, out var pv) && pv is DropdownValue pvDv
+                    ? pvDv.SelectedString
+                    : input.SelectedString ?? string.Empty;
+
+                combo.Text = currentString;
+
+                if (!string.IsNullOrEmpty(currentString))
+                    combo.Items.Add(currentString);
+            }
+
+            return combo;
+        }
+
+        /// <summary>
+        /// Builds a control for a <see cref="DynamoInputType.Selection"/> (element picker) node.
+        /// Shows the currently selected element (if any) and a button that, when clicked,
+        /// closes the dialog and signals <see cref="NeedsPick"/> so that the caller can
+        /// invoke <c>UIDocument.Selection.PickObject</c> and then reopen the dialog.
+        /// </summary>
+        private FrameworkElement BuildSelectionControl(DynamoInputDefinition input)
+        {
+            // Current element identifier (either from an earlier pick or the stored identifier)
+            var currentId = _prefilledValues.TryGetValue(input.Id, out var pv) && pv is string pvStr
+                ? pvStr
+                : input.SelectionIdentifier ?? string.Empty;
+
+            var displayText = string.IsNullOrEmpty(currentId)
+                ? "No element selected"
+                : $"Element ID: {currentId}";
+
+            var infoBox = new TextBox
+            {
+                Text = displayText,
+                IsReadOnly = true,
+                Padding = new Thickness(4),
+                Height = 28,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Background = new SolidColorBrush(Color.FromArgb(0xFF, 0xF5, 0xF5, 0xF5)),
+                Margin = new Thickness(0, 0, 0, 4)
+            };
+
+            var buttonText = input.IsMultipleSelection
+                ? "Select Elements in Revit…"
+                : "Select Element in Revit…";
+
+            var pickButton = new Button
+            {
+                Content = buttonText,
+                Height = 28,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Padding = new Thickness(8, 0, 8, 0)
+            };
+
+            var panel = new StackPanel();
+            panel.Children.Add(infoBox);
+            panel.Children.Add(pickButton);
+
+            // Tag stores the raw element ID for CollectValues
+            panel.Tag = currentId;
+
+            pickButton.Click += (_, e) =>
+            {
+                // Snapshot all current values before closing so they can be restored
+                // when the dialog is reopened after the pick completes.
+                PartialValues = CollectValues();
+                NeedsPick     = true;
+                PickInputId   = input.Id;
+                PickMultiple  = input.IsMultipleSelection;
+                // WasCancelled = false: the user has not abandoned the workflow — they want
+                // to continue by selecting a Revit element.  The caller distinguishes a genuine
+                // cancel (WasCancelled = true) from a pick request (NeedsPick = true).
+                WasCancelled  = false;
+                DialogResult  = false; // Close the dialog; caller checks NeedsPick
+                Close();
+            };
+
+            return panel;
+        }
+
+        /// <summary>
         /// Returns a Slider + TextBox grid when min/max are known, or a plain TextBox otherwise.
         /// The <see cref="FrameworkElement.Tag"/> on the grid holds the Slider so that
         /// <see cref="CollectValues"/> can retrieve the current value.
         /// </summary>
-        private static FrameworkElement BuildNumericControl(DynamoInputDefinition input, bool isInteger)
+        private FrameworkElement BuildNumericControl(DynamoInputDefinition input, bool isInteger)
         {
-            double currentValue = ConvertToDouble(input.DefaultValue);
+            // Honour any pre-filled value
+            double currentValue = _prefilledValues.TryGetValue(input.Id, out var pv)
+                ? ConvertToDouble(pv)
+                : ConvertToDouble(input.DefaultValue);
 
             if (!input.MinValue.HasValue || !input.MaxValue.HasValue)
             {
@@ -317,6 +483,20 @@ namespace Relay.UI
                     ? (object)(int)Math.Round(slider.Value)
                     : slider.Value;
             }
+
+            // ComboBox → DropdownValue (index + string)
+            if (control is ComboBox combo)
+            {
+                return new DropdownValue
+                {
+                    SelectedIndex = combo.SelectedIndex,
+                    SelectedString = combo.SelectedItem as string ?? combo.Text ?? string.Empty
+                };
+            }
+
+            // Selection panel (StackPanel with Tag = element ID string)
+            if (control is StackPanel panel)
+                return panel.Tag as string ?? string.Empty;
 
             return control?.ToString() ?? string.Empty;
         }

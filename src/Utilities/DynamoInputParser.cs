@@ -233,6 +233,23 @@ namespace Relay.Utilities
             if (inputType == DynamoInputType.Unknown && !string.IsNullOrEmpty(concreteType))
                 inputType = DetermineInputTypeFromConcreteType(concreteType);
 
+            // --- JSON property heuristic: detect Dropdown / Selection when ConcreteType is unrecognised ---
+            // This is a reliable fallback: Dynamo's DSDropDownBase nodes always serialise SelectedIndex
+            // (never InputValue), and selection/picker nodes always serialise SelectionIdentifier.
+            if (inputType == DynamoInputType.Unknown && node.ValueKind == JsonValueKind.Object)
+            {
+                bool hasSelectedIndex = node.TryGetProperty("SelectedIndex", out _);
+                bool hasInputValue    = node.TryGetProperty("InputValue", out _);
+
+                // A node that has SelectedIndex but no InputValue is a dropdown.
+                // The exclusion of InputValue avoids misclassifying any hypothetical future node
+                // that might have both properties.
+                if (hasSelectedIndex && !hasInputValue)
+                    inputType = DynamoInputType.Dropdown;
+                else if (node.TryGetProperty("SelectionIdentifier", out _))
+                    inputType = DynamoInputType.Selection;
+            }
+
             // --- Default value from Nodes[].InputValue ---
             var defaultValue = ExtractDefaultValue(node, inputType);
 
@@ -255,6 +272,58 @@ namespace Relay.Utilities
                 definition.StepValue = ReadNullableDouble(meta, node, "StepValue");
             }
 
+            // --- Dropdown-specific data ---
+            if (inputType == DynamoInputType.Dropdown && node.ValueKind == JsonValueKind.Object)
+            {
+                if (node.TryGetProperty("SelectedIndex", out var selIdx) &&
+                    selIdx.ValueKind == JsonValueKind.Number)
+                    definition.SelectedIndex = selIdx.GetInt32();
+
+                if (node.TryGetProperty("SelectedString", out var selStr))
+                    definition.SelectedString = selStr.GetString() ?? string.Empty;
+
+                // Use meta Value as fallback for SelectedString (some nodes write it there)
+                if (string.IsNullOrEmpty(definition.SelectedString) &&
+                    meta.ValueKind == JsonValueKind.Object &&
+                    meta.TryGetProperty("Value", out var metaVal))
+                    definition.SelectedString = metaVal.GetString() ?? string.Empty;
+
+                // Some nodes serialise their Items list directly in the .dyn
+                if (node.TryGetProperty("Items", out var storedItems) &&
+                    storedItems.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in storedItems.EnumerateArray())
+                    {
+                        string displayName = item.ValueKind == JsonValueKind.String
+                            ? item.GetString()
+                            : item.ValueKind == JsonValueKind.Object &&
+                              item.TryGetProperty("Name", out var n) ? n.GetString() : null;
+                        if (!string.IsNullOrEmpty(displayName))
+                            definition.Items.Add(displayName);
+                    }
+
+                    // Match SelectedString → index within the stored list
+                    if (definition.SelectedIndex < 0 && !string.IsNullOrEmpty(definition.SelectedString))
+                        definition.SelectedIndex = definition.Items.IndexOf(definition.SelectedString);
+                }
+            }
+
+            // --- Selection-specific data ---
+            if (inputType == DynamoInputType.Selection && node.ValueKind == JsonValueKind.Object)
+            {
+                if (node.TryGetProperty("SelectionIdentifier", out var selId))
+                    definition.SelectionIdentifier = selId.GetString();
+
+                // Determine multiplicity from the ConcreteType name
+                var typeName = NormalizeTypeName(concreteType);
+                definition.IsMultipleSelection =
+                    typeName.Contains("selectmodelobjects") ||
+                    typeName.Contains("selectmodelobjectsequence") ||
+                    typeName.Contains("selectmodelelements") ||
+                    typeName.Contains("selectelements") ||
+                    typeName.Contains("selectfaces");
+            }
+
             return definition;
         }
 
@@ -262,12 +331,24 @@ namespace Relay.Utilities
         {
             if (string.IsNullOrEmpty(typeString)) return DynamoInputType.Unknown;
 
+            // typeString comes from the top-level Inputs[].Type field in the Dynamo .dyn JSON.
+            // Standard values are "number", "boolean", "string", "integer".
+            // Revit-specific node types appear when a Revit dropdown or selection node
+            // is marked as IsSetAsInput.
             switch (typeString.ToLowerInvariant())
             {
                 case "number": return DynamoInputType.Number;
                 case "integer": return DynamoInputType.Integer;
                 case "boolean": return DynamoInputType.Boolean;
                 case "string": return DynamoInputType.String;
+                // Revit-specific type strings that appear in the top-level Inputs[] array
+                case "revit.category":
+                case "revit.bic":
+                    return DynamoInputType.Dropdown;
+                case "revit.element":
+                case "revit.elements":
+                case "revit.faceitem":
+                    return DynamoInputType.Selection;
                 default: return DynamoInputType.Unknown;
             }
         }
@@ -297,6 +378,24 @@ namespace Relay.Utilities
 
             if (typeName.Contains("stringinput") || typeName.Contains("symbol"))
                 return DynamoInputType.String;
+
+            // Dropdown nodes (DSDropDownBase-derived, including built-in Revit dropdowns)
+            if (typeName.Contains("categories") ||
+                typeName.Contains("elementtypes") ||
+                typeName.Contains("viewtypes") ||
+                typeName.Contains("familytypes") ||
+                typeName.Contains("scheduletypes") ||
+                typeName.Contains("structuralsection") ||
+                typeName.Contains("dropdownbase") ||
+                typeName.Contains("dsdropdown"))
+                return DynamoInputType.Dropdown;
+
+            // Selection / element-picker nodes
+            if (typeName.Contains(".selection.select") ||
+                typeName.Contains("selectmodelobject") ||
+                typeName.Contains("selectfaces") ||
+                typeName.Contains("selectlinkedelement"))
+                return DynamoInputType.Selection;
 
             return DynamoInputType.Unknown;
         }
@@ -383,6 +482,23 @@ namespace Relay.Utilities
         {
             var typeName = NormalizeTypeName(concreteType);
 
+            // --- Dropdown node: update SelectedIndex and SelectedString ---
+            if (value is DropdownValue dropdownVal)
+            {
+                node["SelectedIndex"] = JsonValue.Create(dropdownVal.SelectedIndex);
+                if (!string.IsNullOrEmpty(dropdownVal.SelectedString))
+                    node["SelectedString"] = JsonValue.Create(dropdownVal.SelectedString);
+                return;
+            }
+
+            // --- Selection node: update SelectionIdentifier ---
+            // Detect by checking whether the node already has the property (structure-based)
+            if (value is string selectionId && node["SelectionIdentifier"] != null)
+            {
+                node["SelectionIdentifier"] = JsonValue.Create(selectionId);
+                return;
+            }
+
             if (typeName.Contains("codeblock"))
             {
                 // Code block: update the "Code" property
@@ -420,6 +536,8 @@ namespace Relay.Utilities
         {
             switch (value)
             {
+                case DropdownValue dv:
+                    return dv.SelectedString ?? dv.SelectedIndex.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 case bool boolVal:
                     return boolVal ? "true" : "false";
                 case double doubleVal:
@@ -450,6 +568,69 @@ namespace Relay.Utilities
                     return $"\"{escaped}\";";
                 default:
                     return (value?.ToString() ?? string.Empty) + ";";
+            }
+        }
+
+        // -----------------------------------------------------------------------
+        // Revit API item population (optional; requires a live Document)
+        // -----------------------------------------------------------------------
+
+        /// <summary>
+        /// Populates <see cref="DynamoInputDefinition.Items"/> for dropdown inputs that
+        /// require live Revit document data (e.g. Categories, ElementTypes).
+        /// Call this after <see cref="ParseGraphInputs"/> when a Revit document is available.
+        /// The method is a no-op when <paramref name="doc"/> is <c>null</c>.
+        /// </summary>
+        /// <param name="graphInputs">The parsed graph inputs to enrich.</param>
+        /// <param name="doc">The active Revit document, or <c>null</c> to skip.</param>
+        public static void PopulateRevitItems(DynamoGraphInputs graphInputs, Autodesk.Revit.DB.Document doc)
+        {
+            if (graphInputs == null || doc == null) return;
+
+            foreach (var input in graphInputs.Inputs)
+            {
+                if (input.DataType != DynamoInputType.Dropdown || input.Items.Count > 0)
+                    continue; // already populated or not a dropdown
+
+                var typeName = NormalizeTypeName(input.NodeType);
+
+                if (typeName.Contains("categories"))
+                    PopulateCategoryItems(input, doc);
+                // Additional type-specific population can be added here in future
+            }
+        }
+
+        private static void PopulateCategoryItems(DynamoInputDefinition input, Autodesk.Revit.DB.Document doc)
+        {
+            try
+            {
+                var items = new List<string>();
+                foreach (Autodesk.Revit.DB.Category cat in doc.Settings.Categories)
+                {
+                    if (cat != null && !string.IsNullOrEmpty(cat.Name))
+                        items.Add(cat.Name);
+                }
+                items.Sort(StringComparer.OrdinalIgnoreCase);
+                input.Items.AddRange(items);
+
+                // Match the stored SelectedString to find the correct index in our sorted list.
+                // Case-insensitive comparison is intentional: Dynamo may store the category name
+                // in a different casing than the current document locale returns, and category
+                // names are not expected to differ only by case within a single Revit document.
+                if (!string.IsNullOrEmpty(input.SelectedString) && input.SelectedIndex < 0)
+                {
+                    // Prefer an exact match; fall back to case-insensitive if needed
+                    var idx = items.IndexOf(input.SelectedString);
+                    if (idx < 0)
+                        idx = items.FindIndex(s =>
+                            string.Equals(s, input.SelectedString, StringComparison.OrdinalIgnoreCase));
+                    if (idx >= 0)
+                        input.SelectedIndex = idx;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine($"[Relay] Failed to populate category items: {ex.Message}");
             }
         }
     }
