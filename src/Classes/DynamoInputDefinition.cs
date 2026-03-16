@@ -106,6 +106,26 @@ namespace Relay.Classes
     }
 
     /// <summary>
+    /// Holds the Revit UniqueId (written back to <c>SelectionIdentifier</c> in the .dyn) and a
+    /// human-readable description shown in the input dialog.
+    /// Stored in <c>prefilledValues</c> between dialog invocations.
+    /// </summary>
+    internal sealed class SelectionValue
+    {
+        /// <summary>
+        /// The Revit element UniqueId (or comma-separated UniqueIds for multi-select).
+        /// This is the value written to <c>Nodes[].SelectionIdentifier</c>.
+        /// </summary>
+        public string Identifier { get; set; } = string.Empty;
+
+        /// <summary>
+        /// A short human-readable description shown in the dialog info box,
+        /// e.g. "Walls [12345]".
+        /// </summary>
+        public string DisplayText { get; set; } = string.Empty;
+    }
+
+    /// <summary>
     /// Represents all inputs extracted from a Dynamo graph
     /// </summary>
     internal class DynamoGraphInputs

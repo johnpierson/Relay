@@ -492,8 +492,15 @@ namespace Relay.Utilities
             }
 
             // --- Selection node: update SelectionIdentifier ---
-            // Detect by checking whether the node already has the property (structure-based)
-            if (value is string selectionId && node["SelectionIdentifier"] != null)
+            // typeName is already normalised to lowercase by NormalizeTypeName, so comparisons
+            // are effectively case-insensitive.  Known patterns cover all DSRevitNodesUI
+            // selection node types (single, multiple, face, linked-element pickers).
+            bool isSelectionNode = typeName.Contains(".selection.select") ||
+                                   typeName.Contains("selectmodelobject") ||
+                                   typeName.Contains("selectfaces") ||
+                                   typeName.Contains("selectlinkedelement") ||
+                                   typeName.Contains("selectasfamily");
+            if (value is string selectionId && isSelectionNode)
             {
                 node["SelectionIdentifier"] = JsonValue.Create(selectionId);
                 return;
@@ -607,25 +614,47 @@ namespace Relay.Utilities
                 var items = new List<string>();
                 foreach (Autodesk.Revit.DB.Category cat in doc.Settings.Categories)
                 {
-                    if (cat != null && !string.IsNullOrEmpty(cat.Name))
-                        items.Add(cat.Name);
+                    if (cat == null || string.IsNullOrEmpty(cat.Name)) continue;
+
+                    // Include only built-in categories (negative integer IDs) to match the set
+                    // that Dynamo's DSRevitNodesUI.Categories node enumerates.  User-defined
+                    // (family/project) categories have positive IDs and are not in Dynamo's list.
+#if R25_OR_GREATER
+                    if (cat.Id.Value >= 0) continue;
+#else
+#pragma warning disable CS0618
+                    if (cat.Id.IntegerValue >= 0) continue;
+#pragma warning restore CS0618
+#endif
+                    items.Add(cat.Name);
                 }
                 items.Sort(StringComparer.OrdinalIgnoreCase);
                 input.Items.AddRange(items);
 
-                // Match the stored SelectedString to find the correct index in our sorted list.
-                // Case-insensitive comparison is intentional: Dynamo may store the category name
-                // in a different casing than the current document locale returns, and category
-                // names are not expected to differ only by case within a single Revit document.
-                if (!string.IsNullOrEmpty(input.SelectedString) && input.SelectedIndex < 0)
+                // Sync SelectedIndex to OUR sorted list's position.
+                // The index stored in the .dyn (from Dynamo's internal ordering) may differ from
+                // our index.  SelectedString is the only reliable identifier across orderings.
+                if (!string.IsNullOrEmpty(input.SelectedString))
                 {
-                    // Prefer an exact match; fall back to case-insensitive if needed
+                    // Prefer exact match; fall back to case-insensitive
                     var idx = items.IndexOf(input.SelectedString);
                     if (idx < 0)
                         idx = items.FindIndex(s =>
                             string.Equals(s, input.SelectedString, StringComparison.OrdinalIgnoreCase));
-                    if (idx >= 0)
-                        input.SelectedIndex = idx;
+
+                    if (idx < 0)
+                        System.Diagnostics.Trace.WriteLine(
+                            $"[Relay] Category '{input.SelectedString}' not found in the document's built-in " +
+                            "categories — the ComboBox will show no pre-selection.");
+
+                    // Update regardless of current value so it reflects OUR list, not Dynamo's
+                    input.SelectedIndex = idx; // -1 if not found
+                }
+                else if (input.SelectedIndex >= 0 && input.SelectedIndex < items.Count)
+                {
+                    // No SelectedString available — derive it from the (possibly Dynamo-ordered) index
+                    // as a best-effort; the ComboBox will show something sensible
+                    input.SelectedString = items[input.SelectedIndex];
                 }
             }
             catch (Exception ex)

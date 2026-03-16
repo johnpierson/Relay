@@ -2,6 +2,7 @@
 using Autodesk.Revit.UI;
 using Autodesk.Revit.UI.Selection;
 using Dynamo.Applications;
+using Relay.Classes;
 using Relay.UI;
 using Relay.Utilities;
 
@@ -80,15 +81,37 @@ namespace Relay.Methods
 
                                 if (refs != null && refs.Count > 0)
                                 {
-                                    // Store as comma-separated element ID integers.
-                                    // Element IDs are integers (no embedded commas), so this
-                                    // format is safe and matches the single-element convention.
-                                    var ids = string.Join(",",
-                                        refs.Select(r => GetElementIdString(r.ElementId)));
+                                    // Use UniqueId for each element — this is the format that
+                                    // Dynamo's SelectionIdentifier field stores and deserialises.
+                                    // UniqueIds never contain commas so the comma delimiter is safe.
+                                    var idParts  = new List<string>(refs.Count);
+                                    int resolved = 0;
+                                    foreach (var r in refs)
+                                    {
+                                        var el = uiDoc.Document.GetElement(r.ElementId);
+                                        if (el?.UniqueId != null)
+                                        {
+                                            idParts.Add(el.UniqueId);
+                                            resolved++;
+                                        }
+                                        else
+                                        {
+                                            System.Diagnostics.Trace.WriteLine(
+                                                $"[Relay] Could not get UniqueId for element {GetElementIdString(r.ElementId)} — skipping.");
+                                        }
+                                    }
 
-                                    prefilledValues[pickInputId] = ids;
-                                    if (inputDef != null)
-                                        inputDef.SelectionIdentifier = ids;
+                                    if (idParts.Count > 0)
+                                    {
+                                        var uniqueIds = string.Join(",", idParts);
+                                        prefilledValues[pickInputId] = new SelectionValue
+                                        {
+                                            Identifier  = uniqueIds,
+                                            DisplayText = $"{resolved} element(s) selected"
+                                        };
+                                        if (inputDef != null)
+                                            inputDef.SelectionIdentifier = uniqueIds;
+                                    }
                                 }
                             }
                             else
@@ -97,11 +120,23 @@ namespace Relay.Methods
                                     ObjectType.Element,
                                     $"Select element for '{promptName}'");
 
-                                var idStr = GetElementIdString(reference.ElementId);
+                                var element = uiDoc.Document.GetElement(reference.ElementId);
+                                if (element?.UniqueId == null)
+                                {
+                                    System.Diagnostics.Trace.WriteLine(
+                                        $"[Relay] Could not get UniqueId for element {GetElementIdString(reference.ElementId)}.");
+                                    continue; // Reopen without updating — don't store a bad identifier
+                                }
 
-                                prefilledValues[pickInputId] = idStr;
+                                var display = $"{element.Category?.Name ?? "Element"} [{GetElementIdString(reference.ElementId)}]";
+
+                                prefilledValues[pickInputId] = new SelectionValue
+                                {
+                                    Identifier  = element.UniqueId,
+                                    DisplayText = display
+                                };
                                 if (inputDef != null)
-                                    inputDef.SelectionIdentifier = idStr;
+                                    inputDef.SelectionIdentifier = element.UniqueId;
                             }
                         }
                         catch (Autodesk.Revit.Exceptions.OperationCanceledException)

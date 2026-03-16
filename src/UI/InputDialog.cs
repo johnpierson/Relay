@@ -301,14 +301,36 @@ namespace Relay.UI
         /// </summary>
         private FrameworkElement BuildSelectionControl(DynamoInputDefinition input)
         {
-            // Current element identifier (either from an earlier pick or the stored identifier)
-            var currentId = _prefilledValues.TryGetValue(input.Id, out var pv) && pv is string pvStr
-                ? pvStr
-                : input.SelectionIdentifier ?? string.Empty;
+            // Resolve current identifier and display text from prefilledValues or the
+            // graph definition.  prefilledValues may hold a SelectionValue (set by
+            // DynamoMethods after a successful pick) or a plain string (initial state).
+            string currentId   = string.Empty;
+            string displayText = string.Empty;
 
-            var displayText = string.IsNullOrEmpty(currentId)
-                ? "No element selected"
-                : $"Element ID: {currentId}";
+            if (_prefilledValues.TryGetValue(input.Id, out var pv))
+            {
+                if (pv is SelectionValue sv)
+                {
+                    currentId   = sv.Identifier;
+                    displayText = sv.DisplayText;
+                }
+                else if (pv is string str)
+                {
+                    currentId   = str;
+                    displayText = string.IsNullOrEmpty(str) ? string.Empty : $"ID: {str}";
+                }
+            }
+
+            if (string.IsNullOrEmpty(currentId))
+            {
+                currentId   = input.SelectionIdentifier ?? string.Empty;
+                displayText = string.IsNullOrEmpty(currentId)
+                    ? "No element selected"
+                    : $"Previously: {currentId}";
+            }
+
+            if (string.IsNullOrEmpty(displayText))
+                displayText = "No element selected";
 
             var infoBox = new TextBox
             {
@@ -337,7 +359,7 @@ namespace Relay.UI
             panel.Children.Add(infoBox);
             panel.Children.Add(pickButton);
 
-            // Tag stores the raw element ID for CollectValues
+            // Tag stores the UniqueId string for CollectValues / write-back
             panel.Tag = currentId;
 
             pickButton.Click += (_, e) =>
