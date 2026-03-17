@@ -476,6 +476,12 @@ namespace Relay.UI
                 Margin = new Thickness(0, 0, 8, 0)
             };
 
+            if (isInteger)
+            {
+                slider.TickFrequency = step;
+                slider.IsSnapToTickEnabled = true;
+            }
+
             var textBox = new TextBox
             {
                 Text = FormatNumber(currentValue, isInteger),
@@ -494,7 +500,10 @@ namespace Relay.UI
             textBox.LostFocus += (sender, e) =>
             {
                 if (double.TryParse(textBox.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+                {
+                    if (isInteger) parsed = Math.Round(parsed);
                     slider.Value = Math.Max(min, Math.Min(max, parsed));
+                }
                 else
                     textBox.Text = FormatNumber(slider.Value, isInteger);
             };
