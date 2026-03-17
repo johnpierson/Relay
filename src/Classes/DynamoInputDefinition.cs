@@ -50,6 +50,13 @@ namespace Relay.Classes
         /// </summary>
         public string NodeType { get; set; }
 
+        /// <summary>
+        /// Optional group name from a Dynamo annotation (group) that contains this node.
+        /// When non-null/non-empty, the input dialog renders this input inside a
+        /// <see cref="System.Windows.Controls.GroupBox"/> labelled with this name.
+        /// </summary>
+        public string GroupName { get; set; }
+
         // ---- Dropdown properties ----
 
         /// <summary>

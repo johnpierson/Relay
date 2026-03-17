@@ -124,6 +124,51 @@ namespace Relay.Utilities
                     if (definition != null)
                         result.Inputs.Add(definition);
                 }
+
+                // ----------------------------------------------------------------
+                // Step 5: Assign group names from View.Annotations
+                // Dynamo groups (annotations) contain a Nodes[] array with node IDs.
+                // We assign the annotation's Title to each matching input definition
+                // so that InputDialog can wrap them in a WPF GroupBox.
+                // ----------------------------------------------------------------
+                if (view.TryGetProperty("Annotations", out var annotations) &&
+                    annotations.ValueKind == JsonValueKind.Array)
+                {
+                    // Build a lookup: node ID → annotation title
+                    // Preserve annotation order so the first annotation that contains a
+                    // given node "wins" (in case of nested/overlapping groups).
+                    var nodeGroupMap = new Dictionary<string, string>(StringComparer.Ordinal);
+
+                    foreach (var annotation in annotations.EnumerateArray())
+                    {
+                        var title = annotation.TryGetProperty("Title", out var titleProp)
+                            ? titleProp.GetString() ?? string.Empty
+                            : string.Empty;
+
+                        if (string.IsNullOrWhiteSpace(title)) continue;
+
+                        if (!annotation.TryGetProperty("Nodes", out var groupNodes) ||
+                            groupNodes.ValueKind != JsonValueKind.Array)
+                            continue;
+
+                        foreach (var nodeIdEl in groupNodes.EnumerateArray())
+                        {
+                            var nodeId = nodeIdEl.GetString();
+                            if (string.IsNullOrEmpty(nodeId)) continue;
+
+                            // First annotation wins; don't overwrite an already-assigned group
+                            if (!nodeGroupMap.ContainsKey(nodeId))
+                                nodeGroupMap[nodeId] = title;
+                        }
+                    }
+
+                    // Apply group names to input definitions
+                    foreach (var inputDef in result.Inputs)
+                    {
+                        if (nodeGroupMap.TryGetValue(inputDef.Id, out var groupName))
+                            inputDef.GroupName = groupName;
+                    }
+                }
             }
             catch (Exception ex)
             {

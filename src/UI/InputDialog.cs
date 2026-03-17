@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -122,8 +124,7 @@ namespace Relay.UI
             };
 
             var inputPanel = new StackPanel();
-            foreach (var input in _graphInputs.Inputs)
-                inputPanel.Children.Add(BuildInputGroup(input));
+            BuildGroupedInputs(inputPanel);
 
             scrollViewer.Content = inputPanel;
             Grid.SetRow(scrollViewer, 1);
@@ -160,6 +161,58 @@ namespace Relay.UI
             mainGrid.Children.Add(buttonPanel);
 
             Content = mainGrid;
+        }
+
+        /// <summary>
+        /// Populates <paramref name="panel"/> with input controls, wrapping any inputs
+        /// that share a Dynamo group name inside a <see cref="GroupBox"/>.
+        /// Inputs without a group name are added directly.
+        /// Ordering is preserved from <see cref="DynamoGraphInputs.Inputs"/>.
+        /// </summary>
+        private void BuildGroupedInputs(StackPanel panel)
+        {
+            // Build an ordered list of (groupKey, inputs) preserving NodeViews order
+            var groupOrder = new List<string>();
+            var groupMap   = new Dictionary<string, List<DynamoInputDefinition>>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var input in _graphInputs.Inputs)
+            {
+                var key = input.GroupName ?? string.Empty;
+                if (!groupMap.ContainsKey(key))
+                {
+                    groupOrder.Add(key);
+                    groupMap[key] = new List<DynamoInputDefinition>();
+                }
+                groupMap[key].Add(input);
+            }
+
+            foreach (var key in groupOrder)
+            {
+                var inputsInGroup = groupMap[key];
+
+                if (!string.IsNullOrEmpty(key))
+                {
+                    // Render inside a GroupBox labelled with the Dynamo group title
+                    var innerPanel = new StackPanel { Margin = new Thickness(0, 4, 0, 4) };
+                    foreach (var input in inputsInGroup)
+                        innerPanel.Children.Add(BuildInputGroup(input));
+
+                    var groupBox = new GroupBox
+                    {
+                        Header  = key,
+                        Content = innerPanel,
+                        Margin  = new Thickness(0, 0, 0, 14),
+                        Padding = new Thickness(6, 6, 6, 2)
+                    };
+                    panel.Children.Add(groupBox);
+                }
+                else
+                {
+                    // No group — render inputs directly into the panel
+                    foreach (var input in inputsInGroup)
+                        panel.Children.Add(BuildInputGroup(input));
+                }
+            }
         }
 
         private UIElement BuildInputGroup(DynamoInputDefinition input)
