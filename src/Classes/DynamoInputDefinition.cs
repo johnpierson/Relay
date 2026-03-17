@@ -59,6 +59,14 @@ namespace Relay.Classes
         public List<string> Items { get; set; } = new List<string>();
 
         /// <summary>
+        /// For dropdown nodes: parallel serialisation identifiers for each item in
+        /// <see cref="Items"/>.  For Revit Categories, this holds the BuiltInCategory enum
+        /// name (e.g. <c>"OST_Walls"</c>) rather than the display name.  When non-empty,
+        /// write-back uses <c>ItemValues[selectedIndex]</c> as <c>SelectedString</c>.
+        /// </summary>
+        public List<string> ItemValues { get; set; } = new List<string>();
+
+        /// <summary>
         /// For dropdown nodes: zero-based index of the currently selected item (-1 = none).
         /// </summary>
         public int SelectedIndex { get; set; } = -1;

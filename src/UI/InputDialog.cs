@@ -506,13 +506,27 @@ namespace Relay.UI
                     : slider.Value;
             }
 
-            // ComboBox → DropdownValue (index + string)
+            // ComboBox → DropdownValue (index + serialisation string)
             if (control is ComboBox combo)
             {
+                var idx = combo.SelectedIndex;
+
+                // If the definition has parallel serialisation values (e.g. OST names for
+                // Categories), use those instead of the display string so that the correct
+                // value is written back to Nodes[].SelectedString.
+                string selectedStr;
+                if (definition != null &&
+                    definition.ItemValues.Count > 0 &&
+                    idx >= 0 &&
+                    idx < definition.ItemValues.Count)
+                    selectedStr = definition.ItemValues[idx];
+                else
+                    selectedStr = combo.SelectedItem as string ?? combo.Text ?? string.Empty;
+
                 return new DropdownValue
                 {
-                    SelectedIndex = combo.SelectedIndex,
-                    SelectedString = combo.SelectedItem as string ?? combo.Text ?? string.Empty
+                    SelectedIndex  = idx,
+                    SelectedString = selectedStr
                 };
             }
 

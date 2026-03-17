@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Relay.Classes;
@@ -11,6 +12,12 @@ namespace Relay.Utilities
     /// </summary>
     internal static class DynamoInputParser
     {
+        /// <summary>
+        /// Delimiter used to join / split multiple UniqueIds for multi-element picker nodes.
+        /// UniqueIds themselves never contain a comma, so this is safe.
+        /// </summary>
+        private const string SelectionIdSeparator = ",";
+
         /// <summary>
         /// Reads a .dyn file and returns all nodes marked as IsSetAsInput.
         /// </summary>
@@ -171,6 +178,11 @@ namespace Relay.Utilities
                         if (id == null || !userValues.TryGetValue(id, out var value)) continue;
 
                         input["Value"] = JsonValue.Create(FormatInputsArrayValue(value));
+
+                        // For dropdown nodes (e.g. Categories), also keep SelectedIndex
+                        // in Inputs[] in sync.  Dynamo reads this on restore.
+                        if (value is DropdownValue dv)
+                            input["SelectedIndex"] = JsonValue.Create(dv.SelectedIndex);
                     }
                 }
 
@@ -224,11 +236,40 @@ namespace Relay.Utilities
                 node.TryGetProperty("ConcreteType", out var ctProp))
                 concreteType = ctProp.GetString() ?? string.Empty;
 
-            // --- Type: use top-level Inputs[].Type string first, then ConcreteType ---
+            // --- Type: use top-level Inputs[].Type + Type2 for precise detection, then ConcreteType ---
             var inputType = DynamoInputType.Unknown;
-            if (meta.ValueKind == JsonValueKind.Object &&
-                meta.TryGetProperty("Type", out var typeProp))
-                inputType = DetermineInputTypeFromString(typeProp.GetString());
+
+            string metaType  = string.Empty;
+            string metaType2 = string.Empty;
+            if (meta.ValueKind == JsonValueKind.Object)
+            {
+                if (meta.TryGetProperty("Type", out var typeProp))
+                    metaType = typeProp.GetString() ?? string.Empty;
+                if (meta.TryGetProperty("Type2", out var type2Prop))
+                    metaType2 = type2Prop.GetString() ?? string.Empty;
+            }
+
+            // When both Type and Type2 are present, they give the most reliable signal.
+            // "selection" + "hostSelection"   → element picker (Selection)
+            // "selection" + "dropdownSelection" → dropdown (Dropdown)
+            if (string.Equals(metaType, "selection", StringComparison.OrdinalIgnoreCase))
+            {
+                if (string.Equals(metaType2, "hostSelection",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(metaType2, "hostSelections",
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(metaType2, "linkedHostSelection",
+                        StringComparison.OrdinalIgnoreCase))
+                    inputType = DynamoInputType.Selection;
+                else if (string.Equals(metaType2, "dropdownSelection",
+                             StringComparison.OrdinalIgnoreCase))
+                    inputType = DynamoInputType.Dropdown;
+                // "selection" with unknown Type2: fall through to ConcreteType detection
+            }
+            else if (!string.IsNullOrEmpty(metaType))
+            {
+                inputType = DetermineInputTypeFromString(metaType);
+            }
 
             if (inputType == DynamoInputType.Unknown && !string.IsNullOrEmpty(concreteType))
                 inputType = DetermineInputTypeFromConcreteType(concreteType);
@@ -309,19 +350,57 @@ namespace Relay.Utilities
             }
 
             // --- Selection-specific data ---
-            if (inputType == DynamoInputType.Selection && node.ValueKind == JsonValueKind.Object)
+            if (inputType == DynamoInputType.Selection)
             {
-                if (node.TryGetProperty("SelectionIdentifier", out var selId))
-                    definition.SelectionIdentifier = selId.GetString();
+                // DSRevitNodesUI selection nodes (e.g. DSModelElementSelection) store the
+                // selected element's UniqueId in the Nodes[].InstanceId array.
+                // Older / custom selection nodes use Nodes[].SelectionIdentifier instead.
+                // The top-level Inputs[].Value is also a reliable source (present for both).
+                if (node.ValueKind == JsonValueKind.Object)
+                {
+                    if (node.TryGetProperty("SelectionIdentifier", out var selId))
+                        definition.SelectionIdentifier = selId.GetString();
+
+                    if (string.IsNullOrEmpty(definition.SelectionIdentifier) &&
+                        node.TryGetProperty("InstanceId", out var instanceIds) &&
+                        instanceIds.ValueKind == JsonValueKind.Array &&
+                        instanceIds.GetArrayLength() > 0)
+                    {
+                        // Comma-join all UniqueIds for multi-element nodes
+                        var ids = new List<string>();
+                        foreach (var el in instanceIds.EnumerateArray())
+                        {
+                            var s = el.GetString();
+                            if (!string.IsNullOrEmpty(s)) ids.Add(s);
+                        }
+                        if (ids.Count > 0)
+                            definition.SelectionIdentifier = string.Join(SelectionIdSeparator, ids);
+                    }
+                }
+
+                // Fallback: top-level Inputs[].Value (UniqueId)
+                if (string.IsNullOrEmpty(definition.SelectionIdentifier) &&
+                    meta.ValueKind == JsonValueKind.Object &&
+                    meta.TryGetProperty("Value", out var metaSelVal) &&
+                    metaSelVal.ValueKind == JsonValueKind.String)
+                {
+                    definition.SelectionIdentifier = metaSelVal.GetString();
+                }
 
                 // Determine multiplicity from the ConcreteType name
                 var typeName = NormalizeTypeName(concreteType);
                 definition.IsMultipleSelection =
+                    // DSModelElementsSelection (plural): "Elements" ends in 's', "Selection"
+                    // starts with 'S' → normalized contains "elementss" (double-s junction)
+                    typeName.Contains("elementss") ||
+                    // Legacy / third-party patterns
                     typeName.Contains("selectmodelobjects") ||
                     typeName.Contains("selectmodelobjectsequence") ||
                     typeName.Contains("selectmodelelements") ||
                     typeName.Contains("selectelements") ||
-                    typeName.Contains("selectfaces");
+                    typeName.Contains("selectfaces") ||
+                    // Type2 = "hostSelections" (plural) also indicates multi-select
+                    string.Equals(metaType2, "hostSelections", StringComparison.OrdinalIgnoreCase);
             }
 
             return definition;
@@ -394,7 +473,11 @@ namespace Relay.Utilities
             if (typeName.Contains(".selection.select") ||
                 typeName.Contains("selectmodelobject") ||
                 typeName.Contains("selectfaces") ||
-                typeName.Contains("selectlinkedelement"))
+                typeName.Contains("selectlinkedelement") ||
+                // DSRevitNodesUI: Dynamo.Nodes.DSModelElementSelection,
+                //                  Dynamo.Nodes.DSModelElementsSelection,
+                //                  Dynamo.Nodes.DSFaceSelection, etc.
+                (typeName.Contains("dynamo.nodes.ds") && typeName.Contains("select")))
                 return DynamoInputType.Selection;
 
             return DynamoInputType.Unknown;
@@ -491,19 +574,41 @@ namespace Relay.Utilities
                 return;
             }
 
-            // --- Selection node: update SelectionIdentifier ---
-            // typeName is already normalised to lowercase by NormalizeTypeName, so comparisons
-            // are effectively case-insensitive.  Known patterns cover all DSRevitNodesUI
-            // selection node types (single, multiple, face, linked-element pickers).
-            bool isSelectionNode = typeName.Contains(".selection.select") ||
-                                   typeName.Contains("selectmodelobject") ||
-                                   typeName.Contains("selectfaces") ||
-                                   typeName.Contains("selectlinkedelement") ||
-                                   typeName.Contains("selectasfamily");
-            if (value is string selectionId && isSelectionNode)
+            // --- Selection node write-back ---
+            // Different DSRevitNodesUI picker node types use different JSON properties:
+            //   • Dynamo.Nodes.DSModelElementSelection (and DSFaceSelection etc.) → InstanceId array
+            //   • Older / third-party selection nodes                              → SelectionIdentifier string
+            if (value is string selectionId)
             {
-                node["SelectionIdentifier"] = JsonValue.Create(selectionId);
-                return;
+                bool isDSModelSelection = typeName.Contains("dynamo.nodes.ds") &&
+                                         typeName.Contains("select");
+                bool isLegacySelection  = typeName.Contains(".selection.select") ||
+                                          typeName.Contains("selectmodelobject") ||
+                                          typeName.Contains("selectfaces") ||
+                                          typeName.Contains("selectlinkedelement") ||
+                                          typeName.Contains("selectasfamily");
+
+                if (isDSModelSelection)
+                {
+                    // Write each UniqueId as a separate element of the InstanceId array.
+                    // Multiple IDs are stored comma-separated in selectionId.
+                    var ids = selectionId.Split(new[] { SelectionIdSeparator }, StringSplitOptions.RemoveEmptyEntries);
+                    var idArray = new System.Text.Json.Nodes.JsonArray();
+                    foreach (var id in ids)
+                    {
+                        var trimmed = id.Trim();
+                        if (!string.IsNullOrEmpty(trimmed))
+                            idArray.Add(JsonValue.Create(trimmed));
+                    }
+                    node["InstanceId"] = idArray;
+                    return;
+                }
+
+                if (isLegacySelection)
+                {
+                    node["SelectionIdentifier"] = JsonValue.Create(selectionId);
+                    return;
+                }
             }
 
             if (typeName.Contains("codeblock"))
@@ -611,7 +716,12 @@ namespace Relay.Utilities
         {
             try
             {
-                var items = new List<string>();
+                // Build parallel lists: display name (shown in UI) and OST enum name (written
+                // back to Nodes[].SelectedString / Inputs[].Value).
+                // Dynamo's Categories node serialises SelectedString as the BuiltInCategory
+                // enum name (e.g. "OST_Walls"), not the display name ("Walls").
+                var pairs = new List<(string DisplayName, string OstName)>();
+
                 foreach (Autodesk.Revit.DB.Category cat in doc.Settings.Categories)
                 {
                     if (cat == null || string.IsNullOrEmpty(cat.Name)) continue;
@@ -620,41 +730,62 @@ namespace Relay.Utilities
                     // that Dynamo's DSRevitNodesUI.Categories node enumerates.  User-defined
                     // (family/project) categories have positive IDs and are not in Dynamo's list.
 #if R25_OR_GREATER
-                    if (cat.Id.Value >= 0) continue;
+                    var catIdLong = cat.Id.Value;
 #else
 #pragma warning disable CS0618
-                    if (cat.Id.IntegerValue >= 0) continue;
+                    var catIdLong = (long)cat.Id.IntegerValue;
 #pragma warning restore CS0618
 #endif
-                    items.Add(cat.Name);
+                    if (catIdLong >= 0) continue;
+
+                    // Get the BuiltInCategory enum name (e.g. "OST_Walls").
+                    string ostName;
+                    try
+                    {
+                        var bic = (Autodesk.Revit.DB.BuiltInCategory)(int)catIdLong;
+                        ostName = bic.ToString();
+                    }
+                    catch
+                    {
+                        // Fallback: use display name if enum cast fails
+                        ostName = cat.Name;
+                    }
+
+                    pairs.Add((cat.Name, ostName));
                 }
-                items.Sort(StringComparer.OrdinalIgnoreCase);
-                input.Items.AddRange(items);
+
+                // Sort alphabetically by display name (matches Dynamo's ordering)
+                pairs.Sort((a, b) =>
+                    string.Compare(a.DisplayName, b.DisplayName, StringComparison.OrdinalIgnoreCase));
+
+                input.Items.AddRange(pairs.Select(p => p.DisplayName));
+                input.ItemValues.AddRange(pairs.Select(p => p.OstName));
 
                 // Sync SelectedIndex to OUR sorted list's position.
-                // The index stored in the .dyn (from Dynamo's internal ordering) may differ from
-                // our index.  SelectedString is the only reliable identifier across orderings.
+                // input.SelectedString is the OST name (e.g. "OST_Walls") from the .dyn file.
+                // We match against ItemValues (OST names), not display names.
                 if (!string.IsNullOrEmpty(input.SelectedString))
                 {
-                    // Prefer exact match; fall back to case-insensitive
-                    var idx = items.IndexOf(input.SelectedString);
+                    // Prefer exact OST-name match in ItemValues
+                    var idx = input.ItemValues.FindIndex(v =>
+                        string.Equals(v, input.SelectedString, StringComparison.OrdinalIgnoreCase));
+
+                    // Fallback: try matching against display names (just in case)
                     if (idx < 0)
-                        idx = items.FindIndex(s =>
+                        idx = input.Items.FindIndex(s =>
                             string.Equals(s, input.SelectedString, StringComparison.OrdinalIgnoreCase));
 
                     if (idx < 0)
                         System.Diagnostics.Trace.WriteLine(
-                            $"[Relay] Category '{input.SelectedString}' not found in the document's built-in " +
-                            "categories — the ComboBox will show no pre-selection.");
+                            $"[Relay] Category '{input.SelectedString}' not found in the document's " +
+                            "built-in categories — the ComboBox will show no pre-selection.");
 
-                    // Update regardless of current value so it reflects OUR list, not Dynamo's
                     input.SelectedIndex = idx; // -1 if not found
                 }
-                else if (input.SelectedIndex >= 0 && input.SelectedIndex < items.Count)
+                else if (input.SelectedIndex >= 0 && input.SelectedIndex < input.Items.Count)
                 {
-                    // No SelectedString available — derive it from the (possibly Dynamo-ordered) index
-                    // as a best-effort; the ComboBox will show something sensible
-                    input.SelectedString = items[input.SelectedIndex];
+                    // No SelectedString available — derive the OST name from our sorted list
+                    input.SelectedString = input.ItemValues[input.SelectedIndex];
                 }
             }
             catch (Exception ex)
