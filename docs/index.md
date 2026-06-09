@@ -36,6 +36,7 @@ This code is provided "As-Is" and without warranty. The idea was to expose how t
 - Revit 2024 | Dynamo 2.19.0 | Supported by Developer
 - Revit 2025 | Dynamo 3.0.0   | Supported by Developer
 - Revit 2026 | Dynamo 3.2.x   | Supported by Developer
+- Revit 2027 | Dynamo 4.0.x   | Supported by Developer
 
 # ⏯ Usage
 ## 🔧 Installation:

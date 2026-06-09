@@ -6,10 +6,14 @@ namespace Relay.Methods
 {
     internal static class DynamoMethods
     {
+        private static WeakReference<Autodesk.Revit.DB.Document> lastDynamoDocument;
+
         internal static Result RunGraph(UIApplication uiApp, string dynamoJournal)
         {
             //create a temporary copy of the graph set to automatic. this is required for running Dynamo UI-Less
             string tempGraphPath = DynamoUtils.SetToAutomatic(dynamoJournal);
+            var currentDocument = uiApp.ActiveUIDocument?.Document;
+            bool shouldShutdownModel = ShouldShutdownDynamoModel(currentDocument);
 
             //DynamoRevit dynamoRevit = new DynamoRevit();
 
@@ -23,7 +27,7 @@ namespace Relay.Methods
                     //{JournalKeys.DynPathKey, tempGraphPath},
                     //{JournalKeys.DynPathExecuteKey, true.ToString()},
                     {JournalKeys.ForceManualRunKey, true.ToString()},
-                    {JournalKeys.ModelShutDownKey, true.ToString()},
+                    {JournalKeys.ModelShutDownKey, shouldShutdownModel.ToString()},
                     //{JournalKeys.ModelNodesInfo, false.ToString()},
                 };
 
@@ -48,6 +52,7 @@ namespace Relay.Methods
 
                 rdm.GetType().GetMethod("ForceRun").Invoke(rdm, new object[] { });
 
+                UpdateLastDynamoDocument(currentDocument);
 
                 DynamoRevitCommandData dynamoRevitCommandData = new DynamoRevitCommandData
                 {
@@ -66,8 +71,35 @@ namespace Relay.Methods
             finally
             {
                 //clean up the temporary graph copy
-                try { File.Delete(tempGraphPath); } catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary graph file '{tempGraphPath}': {ex.Message}"); }
+                try { System.IO.File.Delete(tempGraphPath); } catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary graph file '{tempGraphPath}': {ex.Message}"); }
             }
+        }
+
+        private static bool ShouldShutdownDynamoModel(Autodesk.Revit.DB.Document currentDocument)
+        {
+            if (currentDocument == null)
+            {
+                return true;
+            }
+
+            if (lastDynamoDocument == null)
+            {
+                return false;
+            }
+
+            return !lastDynamoDocument.TryGetTarget(out var previousDocument)
+                   || !ReferenceEquals(previousDocument, currentDocument);
+        }
+
+        private static void UpdateLastDynamoDocument(Autodesk.Revit.DB.Document currentDocument)
+        {
+            if (currentDocument == null)
+            {
+                lastDynamoDocument = null;
+                return;
+            }
+
+            lastDynamoDocument = new WeakReference<Autodesk.Revit.DB.Document>(currentDocument);
         }
     }
 }
