@@ -153,7 +153,13 @@ namespace Relay
             {
                 if (!e.Item.Id.Contains("relay")) return;
                 //set our current graph based on the click on the ribbon item
-                Globals.CurrentGraphToRun = e.Item.Description.GetStringBetweenCharacters('[', ']');
+                var metadata = e.Item.Description?.ToString();
+                if (string.IsNullOrWhiteSpace(metadata))
+                {
+                    metadata = e.Item.ToolTip?.ToString();
+                }
+
+                Globals.CurrentGraphToRun = metadata.GetStringBetweenCharacters('[', ']');
             }
             catch (Exception)
             {
