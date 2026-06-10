@@ -1,8 +1,5 @@
-using Autodesk.Revit.UI;
-using Autodesk.Revit.UI.Selection;
+﻿using Autodesk.Revit.UI;
 using Dynamo.Applications;
-using Relay.Classes;
-using Relay.UI;
 using Relay.Utilities;
 
 namespace Relay.Methods
@@ -13,54 +10,12 @@ namespace Relay.Methods
 
         internal static Result RunGraph(UIApplication uiApp, string dynamoJournal)
         {
+            //create a temporary copy of the graph set to automatic. this is required for running Dynamo UI-Less
+            string tempGraphPath = DynamoUtils.SetToAutomatic(dynamoJournal);
             var currentDocument = uiApp.ActiveUIDocument?.Document;
-            var sourceGraphPath = dynamoJournal;
-            string modifiedGraphPath = null;
-            string tempGraphPath = null;
-
-            var graphInputs = DynamoInputParser.ParseGraphInputs(dynamoJournal);
-            DynamoInputParser.PopulateRevitItems(graphInputs, currentDocument);
-
-            if (graphInputs.HasInputs)
-            {
-                var prefilledValues = new Dictionary<string, object>();
-
-                while (true)
-                {
-                    var dialog = new InputDialog(graphInputs, prefilledValues);
-
-                    try
-                    {
-                        new System.Windows.Interop.WindowInteropHelper(dialog)
-                        {
-                            Owner = uiApp.MainWindowHandle
-                        };
-                    }
-                    catch (Exception ex)
-                    {
-                        System.Diagnostics.Trace.WriteLine($"[Relay] Could not set input dialog owner: {ex.Message}");
-                    }
-
-                    dialog.ShowDialog();
-
-                    if (dialog.WasCancelled)
-                        return Result.Cancelled;
-
-                    if (dialog.NeedsPick && !string.IsNullOrEmpty(dialog.PickInputId))
-                    {
-                        prefilledValues = dialog.PartialValues;
-                        HandleSelectionPick(uiApp, graphInputs, prefilledValues, dialog.PickInputId, dialog.PickMultiple);
-                        continue;
-                    }
-
-                    modifiedGraphPath = DynamoInputParser.ApplyUserValues(dynamoJournal, dialog.UserValues);
-                    sourceGraphPath = modifiedGraphPath;
-                    break;
-                }
-            }
-
-            tempGraphPath = DynamoUtils.SetToAutomatic(sourceGraphPath);
             bool shouldShutdownModel = ShouldShutdownDynamoModel(currentDocument);
+
+            //DynamoRevit dynamoRevit = new DynamoRevit();
 
             try
             {
@@ -105,103 +60,18 @@ namespace Relay.Methods
                     JournalData = journalData
                 };
 
+
+                //sorry folks, parks closed, the moose out front should have told you
+#if Revit2021Pro || Revit2022Pro || Revit2023Pro
+                Packages.ResolvePackages(DynamoRevit.RevitDynamoModel.PathManager.DefaultPackagesDirectory, dynamoJournal);
+#endif
+
                 return Result.Succeeded;
             }
             finally
             {
-                try
-                {
-                    if (tempGraphPath != null)
-                        System.IO.File.Delete(tempGraphPath);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary graph file '{tempGraphPath}': {ex.Message}");
-                }
-
-                try
-                {
-                    if (modifiedGraphPath != null && modifiedGraphPath != dynamoJournal)
-                        System.IO.File.Delete(modifiedGraphPath);
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete modified graph file '{modifiedGraphPath}': {ex.Message}");
-                }
-            }
-        }
-
-        private static void HandleSelectionPick(
-            UIApplication uiApp,
-            DynamoGraphInputs graphInputs,
-            Dictionary<string, object> prefilledValues,
-            string inputId,
-            bool pickMultiple)
-        {
-            var uiDocument = uiApp.ActiveUIDocument;
-            if (uiDocument == null)
-                return;
-
-            var input = graphInputs.Inputs.FirstOrDefault(item => item.Id == inputId);
-            var promptName = input?.Name ?? "element";
-
-            try
-            {
-                if (pickMultiple)
-                {
-                    var references = uiDocument.Selection.PickObjects(
-                        ObjectType.Element,
-                        $"Select elements for '{promptName}'");
-
-                    var uniqueIds = new List<string>();
-                    foreach (var reference in references)
-                    {
-                        var element = uiDocument.Document.GetElement(reference.ElementId);
-                        if (!string.IsNullOrEmpty(element?.UniqueId))
-                            uniqueIds.Add(element.UniqueId);
-                    }
-
-                    if (uniqueIds.Count == 0)
-                        return;
-
-                    var identifier = string.Join(",", uniqueIds);
-                    prefilledValues[inputId] = new SelectionValue
-                    {
-                        Identifier = identifier,
-                        DisplayText = $"{uniqueIds.Count} element(s) selected"
-                    };
-
-                    if (input != null)
-                        input.SelectionIdentifier = identifier;
-
-                    return;
-                }
-
-                var pickedReference = uiDocument.Selection.PickObject(
-                    ObjectType.Element,
-                    $"Select element for '{promptName}'");
-
-                var pickedElement = uiDocument.Document.GetElement(pickedReference.ElementId);
-                if (string.IsNullOrEmpty(pickedElement?.UniqueId))
-                    return;
-
-                var displayText = $"{pickedElement.Category?.Name ?? "Element"} [{GetElementIdString(pickedReference.ElementId)}]";
-                prefilledValues[inputId] = new SelectionValue
-                {
-                    Identifier = pickedElement.UniqueId,
-                    DisplayText = displayText
-                };
-
-                if (input != null)
-                    input.SelectionIdentifier = pickedElement.UniqueId;
-            }
-            catch (Autodesk.Revit.Exceptions.OperationCanceledException)
-            {
-                // Reopen the dialog with the values the user had entered before picking.
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Trace.WriteLine($"[Relay] Element pick failed: {ex.Message}");
+                //clean up the temporary graph copy
+                try { System.IO.File.Delete(tempGraphPath); } catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary graph file '{tempGraphPath}': {ex.Message}"); }
             }
         }
 
@@ -230,11 +100,6 @@ namespace Relay.Methods
             }
 
             lastDynamoDocument = new WeakReference<Autodesk.Revit.DB.Document>(currentDocument);
-        }
-
-        private static string GetElementIdString(Autodesk.Revit.DB.ElementId elementId)
-        {
-            return elementId.Value.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
     }
 }
