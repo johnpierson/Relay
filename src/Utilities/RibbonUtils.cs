@@ -42,7 +42,8 @@ namespace Relay.Utilities
                     fInfo.Name.GenerateButtonText(),
                     Path.Combine(Globals.ExecutingPath, "Relay.dll"), "Relay.Run")
                 {
-                    ToolTip = tooltip
+                    ToolTip = tooltip,
+                    LongDescription = tooltip
                 };
               
                 //set the images, if there are none, use default
@@ -163,7 +164,9 @@ namespace Relay.Utilities
 
         public static void HideUnused()
         {
-            foreach (var key in Globals.RelayButtons.Keys)
+            var keysToRemove = new List<string>();
+
+            foreach (var key in Globals.RelayButtons.Keys.ToList())
             {
                 Globals.RelayButtons.TryGetValue(key, out RibbonItem ribbonItem);
 
@@ -175,8 +178,13 @@ namespace Relay.Utilities
                     if (File.Exists(path)) continue;
                     ribbonItem.Visible = false;
 
-                    Globals.RelayButtons.Remove(key);
+                    keysToRemove.Add(key);
                 }
+            }
+
+            foreach (var key in keysToRemove)
+            {
+                Globals.RelayButtons.Remove(key);
             }
 
             //now hide empty panels if there are any
