@@ -21,6 +21,7 @@ Startup reads `RelaySettings.ini`, assigns its `Path` value directly to `Globals
 2. Treat `default` case-insensitively as the only explicit default token. Empty, malformed, missing, or inaccessible paths use the executing directory only with a diagnostic, preventing silent configuration drift.
 3. Enumerate directories through a discovery boundary that reports path and operation context. The alternative broad startup catch obscures whether settings, permissions, or graph JSON failed.
 4. Replace cached derived paths such as `RelayGraphs` with methods/properties computed from resolved state at access time.
+5. Resolve relative graph-root settings against the directory containing `RelaySettings.ini` (`Globals.ExecutingPath`). This preserves useful existing configurations while avoiding dependence on Revit's process working directory.
 
 ## Risks / Trade-offs
 
@@ -30,8 +31,8 @@ Startup reads `RelaySettings.ini`, assigns its `Path` value directly to `Globals
 
 ## Migration Plan
 
-Existing valid absolute paths and `default` continue to work. Invalid values gain explicit fallback behavior. No settings file rewrite occurs automatically, so rollback requires only restoring the old resolver path.
+Existing valid absolute paths and `default` continue to work. Relative paths now resolve against the directory containing `RelaySettings.ini`, never Revit's process working directory. Empty, malformed, missing, and inaccessible values fall back to the executing directory with one startup warning and a detailed trace diagnostic. No settings file rewrite occurs automatically. If a resolved root later becomes unavailable, Sync reports the failure and preserves current ribbon mappings. Rollback requires only restoring the old resolver path.
 
 ## Open Questions
 
-- Confirm whether relative paths should resolve against `Globals.ExecutingPath` or be rejected as unsupported.
+None.

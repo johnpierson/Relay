@@ -87,42 +87,32 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Humanizer" Version="2.14.1" />
-        <PackageReference Include="DynamoVisualProgramming.Revit" Version="$(DynRevitVersion).*" />
-      <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).*-*" />
-      <PackageReference Include="System.Text.Json" Version="8.0.3" />
+      <PackageReference Include="Humanizer.Core" Version="2.14.1" ExcludeAssets="runtime" />
+      <PackageReference Include="DynamoVisualProgramming.Revit" Version="$(DynRevitVersion).*" ExcludeAssets="runtime" />
+      <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).*-*" ExcludeAssets="runtime" />
+      <PackageReference Include="System.Text.Json" Version="8.0.3" ExcludeAssets="runtime" />
     </ItemGroup>
 
-    <Target Name="CopyFiles" AfterTargets="CoreBuild">
-        <ItemGroup>
-            <RootItem Include="$(ProjectDir)*.addin" />
-            <AddinItem Include="$(TargetDir)**\*" />
-        </ItemGroup>
-
-        <PropertyGroup>
-            <RootDir>bin\$(RevitVersion) $(Configuration)\</RootDir>
-            <AddinDir>$(RootDir)$(AssemblyName)\</AddinDir>
-        </PropertyGroup>
-
-        <Copy SourceFiles="@(RootItem)" DestinationFolder="$(RootDir)" />
-        <Copy SourceFiles="@(AddinItem)" DestinationFolder="$(AddinDir)\%(RecursiveDir)" />
-
-        <ItemGroup>
-            <AddinFiles Include="$(RootDir)**\*" />
-        </ItemGroup>
-
-        <!--<Copy SourceFiles="@(AddinFiles)" DestinationFolder="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\%(RecursiveDir)" />-->
-    </Target>
-	<PropertyGroup />
+    <PropertyGroup>
+      <ReleaseDir>$(ProjectDir)..\_Release\Revit$(RevitVersion)\</ReleaseDir>
+      <DeployDir>$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\</DeployDir>
+    </PropertyGroup>
     <Target Name="DeleteFiles" AfterTargets="Clean">
         <RemoveDir Directories="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\$(ProjectName)" />
         <Delete Files="$(AppData)\Autodesk\Revit\Addins\$(RevitVersion)\$(ProjectName).addin" />
     </Target>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-      <MakeDir Directories="$(ProjectDir)..\_Release\Revit$(RevitVersion);$(ProjectDir)..\_Release\Revit$(RevitVersion)\Relay" />
-      <Copy SourceFiles="$(ProjectDir)$(OutputPath)System.Text.Json.dll" DestinationFolder="$(ProjectDir)..\_Release\Revit$(RevitVersion)\Relay" Condition="Exists('$(ProjectDir)$(OutputPath)System.Text.Json.dll')" />
-      <Copy SourceFiles="$(ProjectDir)$(OutputPath)Relay.dll" DestinationFolder="$(ProjectDir)..\_Release\Revit$(RevitVersion)\Relay" />
-      <Copy SourceFiles="$(ProjectDir)\Relay.addin" DestinationFolder="$(ProjectDir)..\_Release\Revit$(RevitVersion)" />
+      <MakeDir Directories="$(ReleaseDir);$(ReleaseDir)Relay" />
+      <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ReleaseDir)Relay" />
+      <Copy SourceFiles="$(ProjectDir)\Relay.addin" DestinationFolder="$(ReleaseDir)" />
+    </Target>
+    <Target Name="DeployFiles" AfterTargets="PostBuild" Condition="'$(DeployRelay)' != 'false'">
+      <ItemGroup>
+        <ReleaseItem Include="$(ReleaseDir)**\*" />
+      </ItemGroup>
+      <RemoveDir Directories="$(DeployDir)Relay" />
+      <Delete Files="$(DeployDir)Relay.addin" />
+      <Copy SourceFiles="@(ReleaseItem)" DestinationFolder="$(DeployDir)%(RecursiveDir)" />
     </Target>
 
 </Project>

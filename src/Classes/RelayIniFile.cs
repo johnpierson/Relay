@@ -13,7 +13,6 @@ namespace Relay.Classes
     internal class RelayIniFile
     {
             string Path;
-            bool ResetRibbon;
             string EXE = Assembly.GetExecutingAssembly().GetName().Name;
 
             [DllImport("kernel32", CharSet = CharSet.Unicode)]

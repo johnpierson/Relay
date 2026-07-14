@@ -17,8 +17,10 @@ namespace Relay
         {
             UIApplication uiapp = commandData.Application;
 
-            RibbonUtils.SyncGraphs(uiapp);
-            RibbonUtils.HideUnused();
+            if (RibbonUtils.SyncGraphs(uiapp))
+            {
+                RibbonUtils.HideUnused();
+            }
 
             return Result.Succeeded;
         }

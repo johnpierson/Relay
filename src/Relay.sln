@@ -5,6 +5,8 @@ VisualStudioVersion = 17.8.34309.116
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay", "Relay.csproj", "{25D2130A-176D-450E-9DAB-C8E70564998D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Relay.Tests", "..\tests\Relay.Tests\Relay.Tests.csproj", "{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug R25|Any CPU = Debug R25|Any CPU
@@ -27,6 +29,18 @@ Global
 		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R26|Any CPU.Build.0 = Release R26|Any CPU
 		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R27|Any CPU.ActiveCfg = Release R27|Any CPU
 		{25D2130A-176D-450E-9DAB-C8E70564998D}.Release R27|Any CPU.Build.0 = Release R27|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R25|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R25|Any CPU.Build.0 = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R26|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R26|Any CPU.Build.0 = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R27|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Debug R27|Any CPU.Build.0 = Debug|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R25|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R25|Any CPU.Build.0 = Release|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R26|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R26|Any CPU.Build.0 = Release|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R27|Any CPU.ActiveCfg = Release|Any CPU
+		{BD9D6AB1-32C1-47E7-9A4B-48E67B7A8CA1}.Release R27|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
