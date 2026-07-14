@@ -54,18 +54,6 @@ namespace Relay.Methods
 
                 UpdateLastDynamoDocument(currentDocument);
 
-                DynamoRevitCommandData dynamoRevitCommandData = new DynamoRevitCommandData
-                {
-                    Application = uiApp,
-                    JournalData = journalData
-                };
-
-
-                //sorry folks, parks closed, the moose out front should have told you
-#if Revit2021Pro || Revit2022Pro || Revit2023Pro
-                Packages.ResolvePackages(DynamoRevit.RevitDynamoModel.PathManager.DefaultPackagesDirectory, dynamoJournal);
-#endif
-
                 return Result.Succeeded;
             }
             finally

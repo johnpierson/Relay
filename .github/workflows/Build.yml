@@ -1,0 +1,40 @@
+name: Build supported Revit versions
+
+on:
+  pull_request:
+    paths:
+      - "src/**"
+      - "NuGet.Config"
+      - ".github/workflows/Build.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "src/**"
+      - "NuGet.Config"
+      - ".github/workflows/Build.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration:
+          - Debug R25
+          - Debug R26
+          - Debug R27
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+      - name: Build ${{ matrix.configuration }}
+        run: dotnet build src/Relay.sln --configuration "${{ matrix.configuration }}"
