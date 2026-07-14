@@ -19,7 +19,7 @@ namespace Relay.Utilities
         public static string[] PotentialTabDirectories { get; set; }
 
         public static string RibbonTabName { get; set; } = "Relay";
-        public static string RelayGraphs = Path.Combine(ExecutingPath, RibbonTabName);
+        public static string RelayGraphs => Path.Combine(BasePath, RibbonTabName);
 
         public static string CurrentGraphToRun { get; set; } = "";
 

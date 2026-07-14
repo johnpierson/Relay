@@ -1,4 +1,10 @@
-## ADDED Requirements
+# Graph Root Configuration
+
+## Purpose
+
+Define how Relay resolves, validates, and discovers configured graph roots while preserving add-in availability and active ribbon state when configuration or storage is unavailable.
+
+## Requirements
 
 ### Requirement: Relay resolves the configured graph root
 
@@ -11,6 +17,10 @@ Relay SHALL normalize and validate the configured graph root before graph discov
 #### Scenario: Valid custom root is configured
 - **WHEN** the `Path` setting identifies an accessible directory
 - **THEN** Relay uses the normalized custom directory as the graph root
+
+#### Scenario: Relative custom root is configured
+- **WHEN** the `Path` setting identifies a relative directory
+- **THEN** Relay resolves it relative to the directory containing `RelaySettings.ini`
 
 ### Requirement: Invalid configuration does not prevent startup
 

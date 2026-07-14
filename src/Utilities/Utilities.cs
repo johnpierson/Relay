@@ -12,11 +12,11 @@ namespace Relay.Utilities
         }
         public static string GetStringBetweenCharacters(this string input, char charFrom, char charTo)
         {
-            int posFrom = input.IndexOf(charFrom);
-            if (posFrom != -1) //if found char
+            int posTo = input.LastIndexOf(charTo);
+            if (posTo != -1)
             {
-                int posTo = input.IndexOf(charTo, posFrom + 1);
-                if (posTo != -1) //if found char
+                int posFrom = input.LastIndexOf(charFrom, posTo - 1);
+                if (posFrom != -1)
                 {
                     return input.Substring(posFrom + 1, posTo - posFrom - 1);
                 }

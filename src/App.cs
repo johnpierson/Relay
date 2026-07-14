@@ -5,6 +5,7 @@ using Autodesk.Revit.ApplicationServices;
 using Autodesk.Revit.UI;
 using Autodesk.Windows;
 using Relay.Classes;
+using Relay.Configuration;
 using Relay.Utilities;
 
 namespace Relay
@@ -18,31 +19,49 @@ namespace Relay
             //set the Revit version for reuse
             Globals.RevitVersion = a.ControlledApplication.VersionNumber;
 
-            //read the ini file
-            if (File.Exists(Path.Combine(Globals.ExecutingPath,"RelaySettings.ini")))
+            string startupWarning = null;
+            string settingsPath = Path.Combine(Globals.ExecutingPath, "RelaySettings.ini");
+            string configuredRoot = "default";
+
+            if (File.Exists(settingsPath))
             {
                 try
                 {
                     var relayIni = new RelayIniFile();
-                    var path = relayIni.Read("Path", "Settings");
-                    var resetRibbon = relayIni.Read("ResetRibbon", "Settings");
-                    //it the path is default, read that
-                    Globals.BasePath = path.ToLower().Equals("default") ? Globals.ExecutingPath : path;
+                    configuredRoot = relayIni.Read("Path", "Settings");
                 }
-                //you screwed up the path mapping, sorry this tool is using the default then
-                catch (Exception ex)
+                catch (Exception ex) when (ex is IOException
+                                           or UnauthorizedAccessException
+                                           or DllNotFoundException
+                                           or EntryPointNotFoundException)
                 {
-                    System.Diagnostics.Trace.WriteLine($"[Relay] Failed to read RelaySettings.ini: {ex.Message}");
-                    Globals.BasePath = Globals.ExecutingPath;
+                    configuredRoot = null;
+                    startupWarning = $"Relay could not read '{settingsPath}': {ex.Message}";
                 }
+            }
+
+            GraphRootResolution resolution = GraphRootResolver.Resolve(
+                configuredRoot,
+                Globals.ExecutingPath);
+            Globals.BasePath = resolution.RootPath;
+
+            if (resolution.HasWarning)
+            {
+                startupWarning = resolution.Warning;
+            }
+
+            GraphDirectoryDiscoveryResult discovery = GraphDirectoryDiscovery.Discover(Globals.BasePath);
+            if (discovery.Succeeded)
+            {
+                Globals.PotentialTabDirectories = discovery.Directories;
             }
             else
             {
-                Globals.BasePath = Globals.ExecutingPath;
+                Globals.PotentialTabDirectories = Array.Empty<string>();
+                startupWarning = startupWarning is null
+                    ? discovery.Error
+                    : $"{startupWarning} {discovery.Error}";
             }
-
-            // parse the location for the potential tab name
-            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.BasePath);
             
             if (Globals.PotentialTabDirectories.Any())
             {
@@ -63,7 +82,20 @@ namespace Relay
             CreateRibbon(a);
             a.ControlledApplication.ApplicationInitialized += ControlledApplication_ApplicationInitialized;
 
+            if (startupWarning is not null)
+            {
+                ReportStartupWarning(startupWarning);
+            }
+
             return Result.Succeeded;
+        }
+
+        private static void ReportStartupWarning(string diagnostic)
+        {
+            System.Diagnostics.Trace.WriteLine($"[Relay] {diagnostic}");
+            Autodesk.Revit.UI.TaskDialog.Show(
+                "Relay graph configuration",
+                "Relay could not use the configured graph location. The add-in remains available; review RelaySettings.ini and use Sync Graphs after correcting the path.");
         }
 
         private void ControlledApplication_ApplicationInitialized(object sender, Autodesk.Revit.DB.Events.ApplicationInitializedEventArgs e)

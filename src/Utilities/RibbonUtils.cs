@@ -5,6 +5,7 @@ using AW = Autodesk.Windows;
 using System.Text.Json;
 using System.Windows.Input;
 using Relay.Classes;
+using Relay.Configuration;
 using System.Reflection;
 using Autodesk.Revit.DB.Electrical;
 using Autodesk.Windows;
@@ -89,8 +90,7 @@ namespace Relay.Utilities
                 foreach (var pushButton in pushButtonDatas)
                 {
                     var newButton = panelToUse.AddItem(pushButton);
-                    //add to our global list
-                    Globals.RelayButtons.Add(newButton.ToolTip.GetStringBetweenCharacters('[', ']'), newButton);
+                    TrackButton(panelToUse, newButton);
                 }
                 return;
             }
@@ -107,9 +107,7 @@ namespace Relay.Utilities
                     if (!File.Exists(smolImage))
                     {
                         var newButton = panelToUse.AddItem(pushButton);
- 
-                        //add to our global list
-                        Globals.RelayButtons.Add(newButton.ToolTip.GetStringBetweenCharacters('[', ']'), newButton);
+                        TrackButton(panelToUse, newButton);
                     }
                     else
                     {
@@ -146,33 +144,37 @@ namespace Relay.Utilities
 
             foreach (var ribbonItem in createdButtons)
             {
-                Globals.RelayButtons.Add(ribbonItem.ToolTip.GetStringBetweenCharacters('[', ']'), ribbonItem);
+                TrackButton(panelToUse, ribbonItem);
+            }
+        }
+
+        private static void TrackButton(Autodesk.Revit.UI.RibbonPanel panel, RibbonItem button)
+        {
+            string graphPath = button.ToolTip.GetStringBetweenCharacters('[', ']');
+            Globals.RelayButtons[graphPath] = button;
+
+            if (!Globals.RelayPanels.TryGetValue(panel.Name, out List<RibbonItem> panelButtons))
+            {
+                panelButtons = new List<RibbonItem>();
+                Globals.RelayPanels.Add(panel.Name, panelButtons);
             }
 
-            //now add the buttons to our panel dictionary for later
-            if (Globals.RelayPanels.ContainsKey(panelToUse.Name))
+            if (!panelButtons.Contains(button))
             {
-                Globals.RelayPanels[panelToUse.Name] = createdButtons;
+                panelButtons.Add(button);
             }
-            else
-            {
-                Globals.RelayPanels.Add(panelToUse.Name, createdButtons);
-            }
-          
         }
 
         public static void HideUnused()
         {
-            foreach (var key in Globals.RelayButtons.Keys)
+            foreach (var key in Globals.RelayButtons.Keys.ToArray())
             {
                 Globals.RelayButtons.TryGetValue(key, out RibbonItem ribbonItem);
 
                 if (ribbonItem != null)
                 {
-                    var path = ribbonItem.ToolTip.GetStringBetweenCharacters('[', ']');
-
                     //check if the file exists, if not, hide the button and remove the button from our dictionary
-                    if (File.Exists(path)) continue;
+                    if (File.Exists(key)) continue;
                     ribbonItem.Visible = false;
 
                     Globals.RelayButtons.Remove(key);
@@ -191,7 +193,10 @@ namespace Relay.Utilities
                     {
                         //k, all the buttons are hidden. get the panel to hide now
                         var ribbonPanel = GetPanel(Globals.RibbonTabName, panel);
-                        ribbonPanel.IsVisible = false;
+                        if (ribbonPanel != null)
+                        {
+                            ribbonPanel.IsVisible = false;
+                        }
                     }
                     
                 }
@@ -293,15 +298,21 @@ namespace Relay.Utilities
             return null;
         }
      
-        public static void SyncGraphs(UIApplication uiapp)
+        public static bool SyncGraphs(UIApplication uiapp)
         {
-            // rescan the potential tab directory
-            Globals.PotentialTabDirectories = Directory.GetDirectories(Globals.BasePath);
+            GraphDirectoryDiscoveryResult discovery = GraphDirectoryDiscovery.Discover(Globals.BasePath);
+            if (!discovery.Succeeded)
+            {
+                System.Diagnostics.Trace.WriteLine($"[Relay] {discovery.Error}");
+                return false;
+            }
+
+            Globals.PotentialTabDirectories = discovery.Directories;
 
             // no tabs found, exit
             if (!Globals.PotentialTabDirectories.Any())
             {
-                return;
+                return true;
             }
 
             // iterate through all sub folders
@@ -382,6 +393,8 @@ namespace Relay.Utilities
                     }
                 }
             }
+
+            return true;
         }
 
     }
