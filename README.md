@@ -17,6 +17,11 @@ Kudos to [HossZamani](https://github.com/HossZamani) and other users for the cod
 ## Documentation
 https://johnpierson.github.io/Relay/
 
+## Development
+Relay uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) for spec-driven
+development. See [the repository workflow](openspec/README.md) before proposing
+or implementing behavior changes.
+
 ## Price
 This app is provided "as-is" and open source. 
 

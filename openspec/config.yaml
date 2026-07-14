@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  Relay is an Autodesk Revit add-in that discovers Dynamo graphs on disk,
+  represents them on the Revit ribbon, and executes them through DynamoRevit.
+
+  Product support policy: Revit 2025, 2026, and 2027 only. The repository may
+  still contain legacy build configurations while that migration is completed;
+  do not describe those configurations as supported product behavior.
+
+  Tech stack: C#, WPF, Autodesk Revit API, DynamoRevit, and SDK-style MSBuild.
+  Revit 2025 and 2026 target modern .NET for Windows; Revit 2027 has its own
+  target framework and Dynamo compatibility constraints.
+
+  Host-bound behavior matters. Revit ribbon creation, idling events, external
+  commands, and Dynamo startup/execution all have lifecycle constraints that
+  cannot be treated like ordinary process-local UI code.
+
+  Build from the repository root with:
+    dotnet build src/Relay.sln -c "Debug R25"
+    dotnet build src/Relay.sln -c "Debug R26"
+    dotnet build src/Relay.sln -c "Debug R27"
+
+  Keep changes narrowly scoped, preserve existing graph-folder conventions,
+  surface invalid paths and host API failures, and isolate pure logic from
+  Revit/Dynamo integration points so it can be tested without launching Revit.
+
+rules:
+  proposal:
+    - Include Problem, Scope, Non-goals, Risks, and Compatibility sections.
+    - Identify the affected Revit versions and any Dynamo version assumptions.
+    - Call out user-visible ribbon, graph discovery, or execution changes.
+  specs:
+    - Use SHALL or MUST for normative requirements.
+    - Include WHEN/THEN scenarios for success, failure, cancellation, and lifecycle behavior where applicable.
+    - Cover Revit 2025, 2026, and 2027 compatibility when behavior can differ by host version.
+  design:
+    - Document Revit and Dynamo lifecycle boundaries, ribbon state ownership, and version-specific API behavior.
+    - Prefer testable pure logic around host-bound integration code.
+    - Explain persistence, migration, or backward-compatibility decisions explicitly.
+  tasks:
+    - Include implementation, focused tests, and build validation for Debug R25, Debug R26, and Debug R27.
+    - Keep each task independently verifiable and name the files or subsystem it affects.
