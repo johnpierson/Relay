@@ -1,15 +1,16 @@
 ## 1. State Model
 
-- [ ] 1.1 Add typed discovery snapshot and ribbon registry models under `src/Classes` or `src/Utilities`
-- [ ] 1.2 Extract normalized graph discovery and snapshot comparison from `RibbonUtils.SyncGraphs`
-- [ ] 1.3 Add or reuse a Relay test project and cover unchanged, added, removed, duplicate-name, and failed-discovery snapshots
+- [ ] 1.1 Add typed graph snapshot, tab-and-panel identity, reconciliation plan, and active/historical registry models
+- [ ] 1.2 Extract complete normalized graph discovery and pure snapshot comparison from `RibbonUtils.SyncGraphs`
+- [ ] 1.3 Extend `tests/Relay.Tests` for unchanged, added, removed, restored, duplicate-name, same-panel-name, and failed-discovery snapshots
 
 ## 2. Ribbon Reconciliation
 
-- [ ] 2.1 Refactor `RibbonUtils.AddItems` to append successful controls to complete panel membership
-- [ ] 2.2 Refactor `RibbonUtils.HideUnused` into a two-phase reconciliation that never mutates a collection during enumeration
-- [ ] 2.3 Preserve graph metadata across Revit and Autodesk ribbon wrappers and restore valid panel visibility
-- [ ] 2.4 Verify repeated Sync, add, remove, rename, and empty-panel behavior in Revit 2025, 2026, and 2027
+- [x] 2.1 Append every successfully created control to cumulative panel membership without replacing existing entries
+- [ ] 2.2 Replace per-file `File.Exists` cleanup with snapshot-based two-phase reconciliation applied only after complete discovery
+- [ ] 2.3 Replace tooltip-derived synchronization identity with normalized Relay-owned graph, tab, panel, and host-control mappings
+- [ ] 2.4 Reactivate reusable historical controls and derive panel visibility from complete tab-and-panel membership
+- [ ] 2.5 Verify repeated Sync, add, remove, restore, rename, duplicate panel names, and empty-panel behavior in Revit 2025, 2026, and 2027
 
 ## 3. Validation
 
