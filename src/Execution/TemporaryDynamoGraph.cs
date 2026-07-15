@@ -10,7 +10,7 @@ internal interface ITemporaryGraphFileSystem
     string ReadAllText(string path, Encoding encoding);
     void WriteAllText(string path, string contents, Encoding encoding);
     void Delete(string path);
-    string CreatePath();
+    string CreatePath(string sourcePath);
 }
 
 internal sealed class TemporaryDynamoGraph : IDisposable
@@ -50,7 +50,7 @@ internal sealed class TemporaryDynamoGraph : IDisposable
         }
 
         graph["RunType"] = "Automatic";
-        string temporaryPath = fileSystem.CreatePath();
+        string temporaryPath = fileSystem.CreatePath(sourcePath);
         try
         {
             fileSystem.WriteAllText(temporaryPath, graph.ToJsonString(new JsonSerializerOptions { WriteIndented = true }), new UTF8Encoding(false));
@@ -83,7 +83,12 @@ internal sealed class TemporaryDynamoGraph : IDisposable
         public string ReadAllText(string path, Encoding encoding) => File.ReadAllText(path, encoding);
         public void WriteAllText(string path, string contents, Encoding encoding) => File.WriteAllText(path, contents, encoding);
         public void Delete(string path) => File.Delete(path);
-        public string CreatePath() => System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"relay_{Guid.NewGuid():N}.dyn");
+        public string CreatePath(string sourcePath)
+        {
+            string sourceDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(sourcePath))
+                ?? throw new InvalidOperationException($"Graph '{sourcePath}' has no containing directory.");
+            return System.IO.Path.Combine(sourceDirectory, $".relay_{Guid.NewGuid():N}.dyn");
+        }
     }
 }
 

@@ -17,6 +17,7 @@ public sealed class TemporaryDynamoGraphTests
         Assert.Equal("Manual", prepared?["Nested"]?["RunType"]?.GetValue<string>());
         Assert.Equal("RunType: Manual", prepared?["Name"]?.GetValue<string>());
         Assert.Equal(source, files.SourceText);
+        Assert.Equal("source.dyn", files.PathSource);
     }
 
     [Fact]
@@ -55,9 +56,14 @@ public sealed class TemporaryDynamoGraphTests
         internal string WrittenText { get; private set; }
         internal int DeleteCount { get; private set; }
         internal Exception DeleteException { get; init; }
+        internal string PathSource { get; private set; }
         public string ReadAllText(string path, Encoding encoding) => SourceText;
         public void WriteAllText(string path, string contents, Encoding encoding) => WrittenText = contents;
-        public string CreatePath() => "temporary.dyn";
+        public string CreatePath(string sourcePath)
+        {
+            PathSource = sourcePath;
+            return "temporary.dyn";
+        }
         public void Delete(string path)
         {
             DeleteCount++;
