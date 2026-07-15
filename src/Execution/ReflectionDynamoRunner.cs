@@ -71,6 +71,8 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         }
         catch (Exception exception)
         {
+            System.Diagnostics.Trace.WriteLine(
+                $"[Relay] {adapterName} ExecuteCommand failed:{Environment.NewLine}{exception}");
             throw new InvalidOperationException(
                 $"The {adapterName} adapter failed while invoking ExecuteCommand: {ExceptionDiagnostics.Describe(exception)}",
                 exception);
@@ -176,9 +178,9 @@ internal sealed class ReflectionDynamoExecutionSession : IDynamoExecutionSession
     {
         if (disposed) return;
         disposed = true;
-        if (model is not IDisposable disposable) return;
-        try { disposable.Dispose(); }
-        catch (Exception exception) { CleanupFailure = $"Dynamo session cleanup failed in the {adapterName} adapter: {exception.Message}"; }
+
+        // RevitDynamoModel is process-owned and reused across commands. Disposing it here
+        // shuts down the shared Dynamo host and makes later launches call ShutDown twice.
     }
 
     private DynamoExecutionOutcome BindingFailure(string diagnostic)

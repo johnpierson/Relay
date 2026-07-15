@@ -17,3 +17,7 @@ Host verification was not run in this implementation session because no Revit 20
 - Missing nodes, runtime identity mismatches, and binding failures prevent evaluation.
 - Cancellation disposes the staged session and temporary graph without advancing document lifecycle state.
 - Same-document runs reuse the model policy and cross-document runs request a safe transition.
+
+### Revit 2027 finding
+
+Initial host testing showed that disposing `RevitDynamoModel` as if it were session-owned left Dynamo's shared process model shut down; subsequent Dynamo launches reported `DynamoModel.ShutDown called twice`. Relay now disposes only its execution-session state and leaves the process-owned model lifecycle to Dynamo/Revit.
