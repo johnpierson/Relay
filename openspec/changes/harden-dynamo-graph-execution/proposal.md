@@ -10,6 +10,7 @@ Graph preparation, Dynamo discovery, reflective API binding, model lifecycle pol
 
 - Parse and update the graph run mode structurally without modifying the source graph.
 - Validate DynamoRevit assembly, types, properties, and methods before invocation.
+- Provide a staged execution session that can load a graph without evaluation, accept validated typed bindings, and evaluate only after binding succeeds.
 - Define Dynamo model reuse and shutdown behavior across active Revit documents.
 - Convert preparation and invocation failures into explicit Relay command results and diagnostics.
 - Always clean up temporary graph files.
@@ -18,11 +19,12 @@ Graph preparation, Dynamo discovery, reflective API binding, model lifecycle pol
 
 - Replacing DynamoRevit's supported journal-command execution mechanism.
 - Managing third-party Dynamo package installation.
-- Implementing dynamic graph input UI.
+- Implementing dynamic graph input discovery or UI; this change provides only the staged execution and binding seam they require.
 
 ## What Changes
 
 - Extract graph preparation and reflective binding behind testable components.
+- Split graph execution into validated prepare, load, bind, and evaluate stages while preserving direct execution with an empty binding set.
 - Fail clearly when DynamoRevit is unavailable or incompatible.
 - Track document/model lifecycle only after a successful execution transition.
 - Add version-focused tests and host verification for Revit 2025-2027.
@@ -39,7 +41,7 @@ None.
 
 ## Risks
 
-- DynamoRevit's internal/reflected surface can differ by bundled Dynamo release.
+- DynamoRevit's internal/reflected execution and input-binding surfaces can differ by bundled Dynamo release.
 - Structural JSON writes must preserve graph fields Relay does not understand.
 
 ## Compatibility
@@ -48,4 +50,4 @@ Must cover Dynamo 3.0 with Revit 2025, Dynamo 3.6 with Revit 2026, and the confi
 
 ## Impact
 
-Affects `src/Methods/DynamoMethods.cs`, `src/Utilities/DynamoUtils.cs`, `src/Command.cs`, JSON handling, diagnostics, and execution tests.
+Affects `src/Methods/DynamoMethods.cs`, `src/Utilities/DynamoUtils.cs`, `src/Command.cs`, staged execution and binding contracts, JSON handling, diagnostics, and execution tests. The later `add-dynamic-graph-input-ui` change consumes these contracts.

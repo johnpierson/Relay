@@ -6,20 +6,21 @@
 
 ## 2. Dynamo Adapter
 
-- [ ] 2.1 Define typed Dynamo runner, binding validation, and execution outcome boundaries
-- [ ] 2.2 Implement and validate the Revit 2025/Dynamo 3.0 adapter
-- [ ] 2.3 Implement and validate the Revit 2026/Dynamo 3.6 adapter
-- [ ] 2.4 Confirm the Revit 2027 Dynamo surface and implement its isolated adapter
-- [ ] 2.5 Map preparation, compatibility, invocation, and cancellation outcomes to Revit command results and diagnostics
+- [ ] 2.1 Define typed Dynamo runner, disposable execution session, version-neutral node-GUID binding, adapter validation, and execution outcome boundaries
+- [ ] 2.2 Implement and validate paused load, empty binding, explicit one-shot evaluation, and cleanup in the Revit 2025/Dynamo 3.0 adapter
+- [ ] 2.3 Implement and validate paused load, empty binding, explicit one-shot evaluation, and cleanup in the Revit 2026/Dynamo 3.6 adapter
+- [ ] 2.4 Confirm the Revit 2027 staged execution and runtime binding surface and implement its isolated adapter
+- [ ] 2.5 Validate expected runtime node identity before applying a supplied binding and prevent evaluation after any binding failure
+- [ ] 2.6 Map preparation, load, compatibility, binding, invocation, cancellation, and cleanup outcomes to Revit command results and diagnostics
 
 ## 3. Lifecycle and Host Verification
 
 - [ ] 3.1 Refactor document/model tracking so only successful runs update the weak document reference
-- [ ] 3.2 Test same-document reuse, document changes, failed runs, and missing/incompatible reflection members
-- [ ] 3.3 Verify successful, invalid-graph, unavailable-Dynamo, and cross-document runs in Revit 2025, 2026, and 2027
+- [ ] 3.2 Test same-document reuse, document changes, failed or cancelled staged sessions, and missing/incompatible execution or binding members
+- [ ] 3.3 Verify successful, invalid-graph, unavailable-Dynamo, paused-load, binding-failure, cancellation, and cross-document runs in Revit 2025, 2026, and 2027
 
 ## 4. Validation
 
-- [ ] 4.1 Run focused graph-preparation, adapter, and lifecycle tests
+- [ ] 4.1 Run focused graph-preparation, staged adapter, binding-validation, cancellation, cleanup, and lifecycle tests
 - [ ] 4.2 Build `src/Relay.sln` with `Debug R25`, `Debug R26`, and `Debug R27`
 - [ ] 4.3 Run strict OpenSpec validation and record host compatibility results
