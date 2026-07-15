@@ -65,7 +65,16 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         };
         members.ApplicationProperty.SetValue(commandData, application);
         members.JournalProperty.SetValue(commandData, journal);
-        members.ExecuteMethod.Invoke(dynamo, new[] { commandData });
+        try
+        {
+            members.ExecuteMethod.Invoke(dynamo, new[] { commandData });
+        }
+        catch (Exception exception)
+        {
+            throw new InvalidOperationException(
+                $"The {adapterName} adapter failed while invoking ExecuteCommand: {ExceptionDiagnostics.Describe(exception)}",
+                exception);
+        }
         object model = members.ModelProperty.GetValue(dynamo)
             ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after paused load.");
         return new ReflectionDynamoExecutionSession(model, adapterName);

@@ -37,6 +37,23 @@ public sealed class DynamoExecutionCoordinatorTests
     }
 
     [Fact]
+    public void LoadFailureReportsDeepestExceptionInsteadOfInvocationWrapper()
+    {
+        var runner = new FakeRunner
+        {
+            LoadException = new System.Reflection.TargetInvocationException(
+                new UnauthorizedAccessException("runtime detail"))
+        };
+
+        var outcome = Execute(runner, Array.Empty<DynamoNodeBinding>());
+
+        Assert.Equal(DynamoExecutionStage.Load, outcome.Stage);
+        Assert.Contains("UnauthorizedAccessException", outcome.Diagnostic);
+        Assert.Contains("runtime detail", outcome.Diagnostic);
+        Assert.DoesNotContain("target of an invocation", outcome.Diagnostic, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void CancellationAfterLoadPreventsBindingAndEvaluationAndDisposes()
     {
         var runner = new FakeRunner();
@@ -84,12 +101,14 @@ public sealed class DynamoExecutionCoordinatorTests
         internal bool Compatible { get; init; } = true;
         internal int LoadCount { get; private set; }
         internal FakeSession Session { get; init; } = new();
+        internal Exception LoadException { get; init; }
         public DynamoCompatibilityResult Validate() => Compatible
             ? DynamoCompatibilityResult.Compatible()
             : DynamoCompatibilityResult.Incompatible("ForceRun is missing");
         public IDynamoExecutionSession LoadPaused(string graphPath, bool shutdownExistingModel)
         {
             LoadCount++;
+            if (LoadException is not null) throw LoadException;
             return Session;
         }
     }

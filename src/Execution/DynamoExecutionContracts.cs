@@ -67,7 +67,9 @@ internal sealed class DynamoExecutionCoordinator
         }
         catch (Exception exception)
         {
-            return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Load, exception.Message);
+            return DynamoExecutionOutcome.Failure(
+                DynamoExecutionStage.Load,
+                $"Dynamo paused load failed: {ExceptionDiagnostics.Describe(exception)}");
         }
 
         try
@@ -95,6 +97,16 @@ internal sealed class DynamoExecutionCoordinator
             session.Dispose();
             cleanupFailure = session.CleanupFailure;
         }
+    }
+}
+
+internal static class ExceptionDiagnostics
+{
+    internal static string Describe(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+        Exception root = exception.GetBaseException();
+        return $"{root.GetType().FullName}: {root.Message}";
     }
 }
 
