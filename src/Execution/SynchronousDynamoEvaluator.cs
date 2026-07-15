@@ -16,17 +16,28 @@ internal static class SynchronousDynamoEvaluator
         if (processModeProperty?.CanRead != true || processModeProperty.CanWrite != true)
             return CompatibilityFailure(adapterName, "DynamoScheduler.ProcessMode is missing or not writable.");
 
-        MethodInfo forceRun = model.GetType().GetMethod("ForceRun", Type.EmptyTypes);
-        if (forceRun is null)
-            return CompatibilityFailure(adapterName, "DynamoModel.ForceRun() is missing.");
-
         object workspace = model.GetType().GetProperty("CurrentWorkspace")?.GetValue(model);
         if (workspace is null)
             return CompatibilityFailure(adapterName, "DynamoModel.CurrentWorkspace is unavailable.");
+        MethodInfo run = workspace.GetType().GetMethod("Run", Type.EmptyTypes);
+        if (run is null)
+            return CompatibilityFailure(adapterName, "HomeWorkspaceModel.Run() is missing.");
         PropertyInfo evaluationCountProperty = workspace.GetType().GetProperty("EvaluationCount");
         if (evaluationCountProperty?.CanRead != true)
             return CompatibilityFailure(adapterName, "HomeWorkspaceModel.EvaluationCount is missing or unreadable.");
         long evaluationCountBefore = Convert.ToInt64(evaluationCountProperty.GetValue(workspace));
+
+        object nodesValue = workspace.GetType().GetProperty("Nodes")?.GetValue(workspace);
+        if (nodesValue is not IEnumerable nodes)
+            return CompatibilityFailure(adapterName, "WorkspaceModel.Nodes is unavailable.");
+        object[] nodeList = nodes.Cast<object>().Where(node => node is not null).ToArray();
+        var markMethods = new MethodInfo[nodeList.Length];
+        for (int index = 0; index < nodeList.Length; index++)
+        {
+            markMethods[index] = nodeList[index].GetType().GetMethod("MarkNodeAsModified", new[] { typeof(bool) });
+            if (markMethods[index] is null)
+                return CompatibilityFailure(adapterName, $"Node '{nodeList[index].GetType().FullName}' has no MarkNodeAsModified(bool) method.");
+        }
 
         object previousMode = processModeProperty.GetValue(scheduler);
         object synchronousMode;
@@ -44,7 +55,9 @@ internal static class SynchronousDynamoEvaluator
         try
         {
             processModeProperty.SetValue(scheduler, synchronousMode);
-            forceRun.Invoke(model, null);
+            for (int index = 0; index < nodeList.Length; index++)
+                markMethods[index].Invoke(nodeList[index], new object[] { true });
+            run.Invoke(workspace, null);
         }
         catch (Exception exception)
         {
@@ -104,8 +117,10 @@ internal static class SynchronousDynamoEvaluator
         object runEnabled = runSettings?.GetType().GetProperty("RunEnabled")?.GetValue(runSettings);
         object forceBlockRun = runSettings?.GetType().GetProperty(
             "ForceBlockRun",
-            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(runSettings);
-        object graphRunInProgress = workspace.GetType().GetProperty("GraphRunInProgress")?.GetValue(workspace);
+            BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(null);
+        object graphRunInProgress = workspace.GetType().GetProperty(
+            "GraphRunInProgress",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(workspace);
         return $"RunEnabled={runEnabled ?? "unavailable"}, ForceBlockRun={forceBlockRun ?? "unavailable"}, GraphRunInProgress={graphRunInProgress ?? "unavailable"}";
     }
 

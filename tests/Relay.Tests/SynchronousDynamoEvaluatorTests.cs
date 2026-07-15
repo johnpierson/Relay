@@ -12,10 +12,11 @@ public sealed class SynchronousDynamoEvaluatorTests
         DynamoExecutionOutcome outcome = SynchronousDynamoEvaluator.Evaluate(model, "test");
 
         Assert.True(outcome.Succeeded);
-        Assert.Equal(1, model.ForceRunCount);
+        Assert.Equal(1, model.CurrentWorkspace.RunCount);
         Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
         Assert.Equal(FakeProcessMode.Synchronous, model.ModeObservedDuringRun);
         Assert.Equal(1, model.CurrentWorkspace.EvaluationCount);
+        Assert.All(model.CurrentWorkspace.Nodes, node => Assert.True(node.ForceExecute));
     }
 
     [Fact]
@@ -56,6 +57,16 @@ public sealed class SynchronousDynamoEvaluatorTests
         Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
     }
 
+    [Fact]
+    public void MissingNodeForceExecutionSurfaceReportsCompatibilityFailure()
+    {
+        var outcome = SynchronousDynamoEvaluator.Evaluate(new ModelWithIncompatibleNode(), "test");
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal(DynamoExecutionStage.Compatibility, outcome.Stage);
+        Assert.Contains("MarkNodeAsModified", outcome.Diagnostic);
+    }
+
     private enum FakeProcessMode
     {
         Synchronous,
@@ -70,41 +81,71 @@ public sealed class SynchronousDynamoEvaluatorTests
     private sealed class FakeRunSettings
     {
         public bool RunEnabled { get; set; } = true;
-        internal bool ForceBlockRun { get; set; }
+        internal static bool ForceBlockRun { get; set; }
+    }
+
+    private sealed class FakeNode
+    {
+        public bool ForceExecute { get; private set; }
+        public string State => "Active";
+        public void MarkNodeAsModified(bool forceExecute) => ForceExecute = forceExecute;
     }
 
     private sealed class FakeWorkspace
     {
+        private readonly FakeModel model;
+
+        internal FakeWorkspace(FakeModel model) => this.model = model;
+
         public long EvaluationCount { get; private set; }
         public bool HasRunWithoutCrash { get; private set; } = true;
         public bool GraphRunInProgress { get; private set; }
         public FakeRunSettings RunSettings { get; } = new();
-        public object[] Nodes { get; } = Array.Empty<object>();
-        internal void RecordEvaluation() => EvaluationCount++;
+        public FakeNode[] Nodes { get; } = new[] { new FakeNode(), new FakeNode() };
+        internal int RunCount { get; private set; }
+
+        public void Run()
+        {
+            RunCount++;
+            model.ModeObservedDuringRun = model.Scheduler.ProcessMode;
+            if (model.RunException is not null) throw model.RunException;
+            if (!model.SkipEvaluation) EvaluationCount++;
+        }
     }
 
     private sealed class FakeModel
     {
+        internal FakeModel() => CurrentWorkspace = new FakeWorkspace(this);
+
         public FakeScheduler Scheduler { get; } = new();
-        public FakeWorkspace CurrentWorkspace { get; } = new();
-        internal int ForceRunCount { get; private set; }
-        internal FakeProcessMode? ModeObservedDuringRun { get; private set; }
+        public FakeWorkspace CurrentWorkspace { get; }
+        internal FakeProcessMode? ModeObservedDuringRun { get; set; }
         internal Exception RunException { get; init; }
         internal bool SkipEvaluation { get; init; }
-
-        public void ForceRun()
-        {
-            ForceRunCount++;
-            ModeObservedDuringRun = Scheduler.ProcessMode;
-            if (RunException is not null) throw RunException;
-            if (!SkipEvaluation) CurrentWorkspace.RecordEvaluation();
-        }
     }
 
     private sealed class ModelWithoutScheduler
     {
-        public void ForceRun()
+        public object CurrentWorkspace { get; } = new();
+    }
+
+    private sealed class ModelWithIncompatibleNode
+    {
+        public FakeScheduler Scheduler { get; } = new();
+        public IncompatibleWorkspace CurrentWorkspace { get; } = new();
+    }
+
+    private sealed class IncompatibleWorkspace
+    {
+        public long EvaluationCount => 0;
+        public FakeRunSettings RunSettings { get; } = new();
+        public object[] Nodes { get; } = new object[] { new IncompatibleNode() };
+        public void Run()
         {
         }
+    }
+
+    private sealed class IncompatibleNode
+    {
     }
 }

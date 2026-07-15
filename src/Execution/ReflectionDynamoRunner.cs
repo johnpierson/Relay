@@ -45,12 +45,13 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         if (modelProperty?.CanRead != true) return Incompatible("model", "RevitDynamoModel property is missing or unreadable.");
         Type modelType = modelProperty.PropertyType;
         PropertyInfo schedulerProperty = modelType.GetProperty("Scheduler");
-        MethodInfo forceRunMethod = modelType.GetMethod("ForceRun", Type.EmptyTypes);
+        PropertyInfo currentWorkspaceProperty = modelType.GetProperty("CurrentWorkspace");
         PropertyInfo processModeProperty = schedulerProperty?.PropertyType.GetProperty("ProcessMode");
         if (schedulerProperty?.CanRead != true) return Incompatible("scheduler", "DynamoModel.Scheduler is missing or unreadable.");
         if (processModeProperty?.CanRead != true || processModeProperty.CanWrite != true)
             return Incompatible("scheduler", "DynamoScheduler.ProcessMode is missing or not writable.");
-        if (forceRunMethod is null) return Incompatible("evaluation", "DynamoModel.ForceRun() is missing.");
+        if (currentWorkspaceProperty?.CanRead != true)
+            return Incompatible("evaluation", "DynamoModel.CurrentWorkspace is missing or unreadable.");
 
         members = new AdapterMembers(applicationType, commandDataType, applicationProperty, journalProperty, executeMethod, modelProperty);
         return DynamoCompatibilityResult.Compatible();
@@ -204,18 +205,8 @@ internal sealed class ReflectionDynamoExecutionSession : IDynamoExecutionSession
         if (bindingFailed) return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, "Evaluation is blocked after a binding failure.");
         if (evaluated) return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, "This graph session has already been evaluated.");
         if (disposed) return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, "The execution session is disposed.");
-        MethodInfo forceRun = model.GetType().GetMethod("ForceRun", Type.EmptyTypes);
-        if (forceRun is null) return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Compatibility, $"ForceRun() is missing in the {adapterName} adapter.");
-        try
-        {
-            forceRun.Invoke(model, null);
-            evaluated = true;
-            return DynamoExecutionOutcome.Success();
-        }
-        catch (Exception exception)
-        {
-            return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, $"Dynamo invocation failed in the {adapterName} adapter: {exception.GetBaseException().Message}");
-        }
+        evaluated = true;
+        return SynchronousDynamoEvaluator.Evaluate(model, adapterName);
     }
 
     public void Dispose()
