@@ -21,3 +21,5 @@ Host verification was not run in this implementation session because no Revit 20
 ### Revit 2027 finding
 
 Initial host testing showed that disposing `RevitDynamoModel` as if it were session-owned left Dynamo's shared process model shut down; subsequent Dynamo launches reported `DynamoModel.ShutDown called twice`. Relay now disposes only its execution-session state and leaves the process-owned model lifecycle to Dynamo/Revit.
+
+The same host test also exposed that `dynAutomation=true` is not a paused-load mode in Dynamo 4.0: it starts Dynamo in test mode with synchronous processing and executes the workspace during load. The staged adapter now uses normal UI-less mode, explicitly sets `dynPathExecute=false`, forces manual workspace load, and invokes `ForceRun()` exactly once after binding acceptance.

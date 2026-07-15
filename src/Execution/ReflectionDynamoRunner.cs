@@ -58,8 +58,11 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         var journal = new Dictionary<string, string>
         {
             [JournalKeys.ShowUiKey] = false.ToString(),
-            [JournalKeys.AutomationModeKey] = true.ToString(),
+            // Dynamo's automation mode starts the model in test mode and executes the
+            // workspace during load. A staged Relay session must load UI-less and paused.
+            [JournalKeys.AutomationModeKey] = false.ToString(),
             ["dynPath"] = graphPath,
+            [JournalKeys.DynPathExecuteKey] = false.ToString(),
             [JournalKeys.ForceManualRunKey] = true.ToString(),
             [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
         };
@@ -67,7 +70,12 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         members.JournalProperty.SetValue(commandData, journal);
         try
         {
-            members.ExecuteMethod.Invoke(dynamo, new[] { commandData });
+            object loadResult = members.ExecuteMethod.Invoke(dynamo, new[] { commandData });
+            if (loadResult is Result result && result != Result.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    $"The {adapterName} adapter returned {result} while loading the graph paused.");
+            }
         }
         catch (Exception exception)
         {
