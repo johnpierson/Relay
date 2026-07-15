@@ -51,10 +51,6 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
     public IDynamoExecutionSession LoadPaused(string graphPath, bool shutdownExistingModel)
     {
         if (members is null) throw new InvalidOperationException($"The {adapterName} adapter was not validated.");
-        object dynamo = Activator.CreateInstance(members.ApplicationType)
-            ?? throw new InvalidOperationException($"The {adapterName} adapter could not create DynamoRevit.");
-        object commandData = Activator.CreateInstance(members.CommandDataType)
-            ?? throw new InvalidOperationException($"The {adapterName} adapter could not create DynamoRevitCommandData.");
         var journal = new Dictionary<string, string>
         {
             [JournalKeys.ShowUiKey] = false.ToString(),
@@ -66,6 +62,36 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             [JournalKeys.ForceManualRunKey] = true.ToString(),
             [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
         };
+        object dynamo = InvokeCommand(journal, "loading the graph paused");
+        object model = members.ModelProperty.GetValue(dynamo)
+            ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after paused load.");
+        return new ReflectionDynamoExecutionSession(model, adapterName);
+    }
+
+    public DynamoExecutionOutcome ExecuteDirect(string graphPath, bool shutdownExistingModel)
+    {
+        if (members is null) throw new InvalidOperationException($"The {adapterName} adapter was not validated.");
+        var journal = new Dictionary<string, string>
+        {
+            [JournalKeys.ShowUiKey] = false.ToString(),
+            // Dynamo documents automation mode as a synchronous main-thread execution
+            // path that does not depend on Revit's idle loop.
+            [JournalKeys.AutomationModeKey] = true.ToString(),
+            ["dynPath"] = graphPath,
+            [JournalKeys.DynPathExecuteKey] = true.ToString(),
+            [JournalKeys.ForceManualRunKey] = false.ToString(),
+            [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
+        };
+        InvokeCommand(journal, "executing the graph synchronously");
+        return DynamoExecutionOutcome.Success();
+    }
+
+    private object InvokeCommand(IDictionary<string, string> journal, string operation)
+    {
+        object dynamo = Activator.CreateInstance(members.ApplicationType)
+            ?? throw new InvalidOperationException($"The {adapterName} adapter could not create DynamoRevit.");
+        object commandData = Activator.CreateInstance(members.CommandDataType)
+            ?? throw new InvalidOperationException($"The {adapterName} adapter could not create DynamoRevitCommandData.");
         members.ApplicationProperty.SetValue(commandData, application);
         members.JournalProperty.SetValue(commandData, journal);
         try
@@ -74,7 +100,7 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             if (loadResult is Result result && result != Result.Succeeded)
             {
                 throw new InvalidOperationException(
-                    $"The {adapterName} adapter returned {result} while loading the graph paused.");
+                    $"The {adapterName} adapter returned {result} while {operation}.");
             }
         }
         catch (Exception exception)
@@ -82,12 +108,10 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             System.Diagnostics.Trace.WriteLine(
                 $"[Relay] {adapterName} ExecuteCommand failed:{Environment.NewLine}{exception}");
             throw new InvalidOperationException(
-                $"The {adapterName} adapter failed while invoking ExecuteCommand: {ExceptionDiagnostics.Describe(exception)}",
+                $"The {adapterName} adapter failed while {operation}: {ExceptionDiagnostics.Describe(exception)}",
                 exception);
         }
-        object model = members.ModelProperty.GetValue(dynamo)
-            ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after paused load.");
-        return new ReflectionDynamoExecutionSession(model, adapterName);
+        return dynamo;
     }
 
     private DynamoCompatibilityResult Incompatible(string boundary, string detail) =>

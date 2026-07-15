@@ -27,6 +27,7 @@ internal sealed record DynamoNodeBinding(Guid NodeId, string ExpectedRuntimeType
 internal interface IDynamoRunner
 {
     DynamoCompatibilityResult Validate();
+    DynamoExecutionOutcome ExecuteDirect(string graphPath, bool shutdownExistingModel);
     IDynamoExecutionSession LoadPaused(string graphPath, bool shutdownExistingModel);
 }
 
@@ -60,6 +61,28 @@ internal sealed class DynamoExecutionCoordinator
             return DynamoExecutionOutcome.Failure(DynamoExecutionStage.Compatibility, compatibility.Diagnostic);
         }
 
+        if (cancellationToken.IsCancellationRequested)
+        {
+            return DynamoExecutionOutcome.Cancel("Dynamo execution was cancelled before evaluation.");
+        }
+
+        IReadOnlyCollection<DynamoNodeBinding> effectiveBindings = bindings ?? Array.Empty<DynamoNodeBinding>();
+        if (effectiveBindings.Count == 0)
+        {
+            try
+            {
+                // Dynamo's automation mode executes synchronously on Revit's main thread.
+                // This avoids queuing an asynchronous evaluation from Relay's Idling callback.
+                return runner.ExecuteDirect(graphPath, shutdownExistingModel);
+            }
+            catch (Exception exception)
+            {
+                return DynamoExecutionOutcome.Failure(
+                    DynamoExecutionStage.Invocation,
+                    $"Dynamo synchronous execution failed: {ExceptionDiagnostics.Describe(exception)}");
+            }
+        }
+
         IDynamoExecutionSession session;
         try
         {
@@ -79,7 +102,7 @@ internal sealed class DynamoExecutionCoordinator
                 return DynamoExecutionOutcome.Cancel("Dynamo execution was cancelled before evaluation.");
             }
 
-            DynamoExecutionOutcome bindingOutcome = session.ApplyBindings(bindings ?? Array.Empty<DynamoNodeBinding>());
+            DynamoExecutionOutcome bindingOutcome = session.ApplyBindings(effectiveBindings);
             if (!bindingOutcome.Succeeded)
             {
                 return bindingOutcome;

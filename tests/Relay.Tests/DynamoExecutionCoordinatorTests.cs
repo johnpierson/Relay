@@ -5,14 +5,14 @@ namespace Relay.Tests;
 public sealed class DynamoExecutionCoordinatorTests
 {
     [Fact]
-    public void EmptyBindingsLoadPausedThenEvaluateExactlyOnce()
+    public void EmptyBindingsExecuteSynchronouslyWithoutCreatingPausedSession()
     {
         var runner = new FakeRunner();
         var outcome = Execute(runner, Array.Empty<DynamoNodeBinding>());
         Assert.True(outcome.Succeeded);
-        Assert.Equal(1, runner.Session.BindCount);
-        Assert.Equal(1, runner.Session.EvaluateCount);
-        Assert.True(runner.Session.Disposed);
+        Assert.Equal(1, runner.DirectExecuteCount);
+        Assert.Equal(0, runner.LoadCount);
+        Assert.False(runner.Session.Disposed);
     }
 
     [Fact]
@@ -45,7 +45,8 @@ public sealed class DynamoExecutionCoordinatorTests
                 new UnauthorizedAccessException("runtime detail"))
         };
 
-        var outcome = Execute(runner, Array.Empty<DynamoNodeBinding>());
+        var binding = new DynamoNodeBinding(Guid.NewGuid(), "Expected.Node", 42);
+        var outcome = Execute(runner, new[] { binding });
 
         Assert.Equal(DynamoExecutionStage.Load, outcome.Stage);
         Assert.Contains("UnauthorizedAccessException", outcome.Diagnostic);
@@ -54,7 +55,7 @@ public sealed class DynamoExecutionCoordinatorTests
     }
 
     [Fact]
-    public void CancellationAfterLoadPreventsBindingAndEvaluationAndDisposes()
+    public void CancellationBeforeExecutionDoesNotCreateSession()
     {
         var runner = new FakeRunner();
         using var cancellation = new CancellationTokenSource();
@@ -64,7 +65,9 @@ public sealed class DynamoExecutionCoordinatorTests
         Assert.True(outcome.Cancelled);
         Assert.Equal(0, runner.Session.BindCount);
         Assert.Equal(0, runner.Session.EvaluateCount);
-        Assert.True(runner.Session.Disposed);
+        Assert.False(runner.Session.Disposed);
+        Assert.Equal(0, runner.LoadCount);
+        Assert.Equal(0, runner.DirectExecuteCount);
     }
 
     [Fact]
@@ -72,9 +75,27 @@ public sealed class DynamoExecutionCoordinatorTests
     {
         var runner = new FakeRunner { Session = new FakeSession { CleanupFailureValue = "cleanup failed" } };
         var coordinator = new DynamoExecutionCoordinator();
-        var outcome = coordinator.Execute(runner, "graph.dyn", false, Array.Empty<DynamoNodeBinding>(), CancellationToken.None, out string cleanup);
+        var binding = new DynamoNodeBinding(Guid.NewGuid(), "Expected.Node", 42);
+        var outcome = coordinator.Execute(runner, "graph.dyn", false, new[] { binding }, CancellationToken.None, out string cleanup);
         Assert.True(outcome.Succeeded);
         Assert.Equal("cleanup failed", cleanup);
+    }
+
+    [Fact]
+    public void DirectExecutionFailureReportsDeepestException()
+    {
+        var runner = new FakeRunner
+        {
+            DirectException = new System.Reflection.TargetInvocationException(
+                new InvalidOperationException("evaluation detail"))
+        };
+
+        var outcome = Execute(runner, Array.Empty<DynamoNodeBinding>());
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal(DynamoExecutionStage.Invocation, outcome.Stage);
+        Assert.Contains("InvalidOperationException", outcome.Diagnostic);
+        Assert.Contains("evaluation detail", outcome.Diagnostic);
     }
 
     [Fact]
@@ -99,12 +120,20 @@ public sealed class DynamoExecutionCoordinatorTests
     private sealed class FakeRunner : IDynamoRunner
     {
         internal bool Compatible { get; init; } = true;
+        internal int DirectExecuteCount { get; private set; }
         internal int LoadCount { get; private set; }
         internal FakeSession Session { get; init; } = new();
         internal Exception LoadException { get; init; }
+        internal Exception DirectException { get; init; }
         public DynamoCompatibilityResult Validate() => Compatible
             ? DynamoCompatibilityResult.Compatible()
             : DynamoCompatibilityResult.Incompatible("ForceRun is missing");
+        public DynamoExecutionOutcome ExecuteDirect(string graphPath, bool shutdownExistingModel)
+        {
+            DirectExecuteCount++;
+            if (DirectException is not null) throw DirectException;
+            return DynamoExecutionOutcome.Success();
+        }
         public IDynamoExecutionSession LoadPaused(string graphPath, bool shutdownExistingModel)
         {
             LoadCount++;
