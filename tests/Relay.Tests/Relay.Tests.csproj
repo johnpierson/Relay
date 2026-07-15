@@ -19,5 +19,7 @@
   <ItemGroup>
     <Compile Include="..\..\src\Configuration\GraphRootResolver.cs" Link="Configuration\GraphRootResolver.cs" />
     <Compile Include="..\..\src\Configuration\GraphDirectoryDiscovery.cs" Link="Configuration\GraphDirectoryDiscovery.cs" />
+    <Compile Include="..\..\src\Execution\TemporaryDynamoGraph.cs" Link="Execution\TemporaryDynamoGraph.cs" />
+    <Compile Include="..\..\src\Execution\DynamoExecutionContracts.cs" Link="Execution\DynamoExecutionContracts.cs" />
   </ItemGroup>
 </Project>
