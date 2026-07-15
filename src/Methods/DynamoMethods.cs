@@ -1,93 +1,45 @@
-﻿using Autodesk.Revit.UI;
-using Dynamo.Applications;
-using Relay.Utilities;
+using Autodesk.Revit.DB;
+using Autodesk.Revit.UI;
+using Relay.Execution;
 
-namespace Relay.Methods
+namespace Relay.Methods;
+
+internal static class DynamoMethods
 {
-    internal static class DynamoMethods
+    private static readonly SuccessfulDocumentTracker<Document> DocumentTracker = new();
+
+    internal static Result RunGraph(UIApplication uiApp, string dynamoJournal, out string diagnostic)
     {
-        private static WeakReference<Autodesk.Revit.DB.Document> lastDynamoDocument;
-
-        internal static Result RunGraph(UIApplication uiApp, string dynamoJournal)
+        diagnostic = null;
+        DynamoExecutionOutcome outcome;
+        string sessionCleanupFailure;
+        try
         {
-            //create a temporary copy of the graph set to automatic. this is required for running Dynamo UI-Less
-            string tempGraphPath = DynamoUtils.SetToAutomatic(dynamoJournal);
-            var currentDocument = uiApp.ActiveUIDocument?.Document;
-            bool shouldShutdownModel = ShouldShutdownDynamoModel(currentDocument);
+            Document currentDocument = uiApp.ActiveUIDocument?.Document;
+            bool transitionModel = DocumentTracker.RequiresModelTransition(currentDocument);
+            var coordinator = new DynamoExecutionCoordinator();
+            outcome = coordinator.Execute(
+                new ReflectionDynamoRunner(uiApp),
+                dynamoJournal,
+                transitionModel,
+                Array.Empty<DynamoNodeBinding>(),
+                CancellationToken.None,
+                out sessionCleanupFailure);
 
-            //DynamoRevit dynamoRevit = new DynamoRevit();
-
-            try
-            {
-                IDictionary<string, string> journalData = new Dictionary<string, string>
-                {
-                    {JournalKeys.ShowUiKey, false.ToString()},
-                    {JournalKeys.AutomationModeKey, true.ToString()},
-                    {"dynPath", tempGraphPath},
-                    //{JournalKeys.DynPathKey, tempGraphPath},
-                    //{JournalKeys.DynPathExecuteKey, true.ToString()},
-                    {JournalKeys.ForceManualRunKey, true.ToString()},
-                    {JournalKeys.ModelShutDownKey, shouldShutdownModel.ToString()},
-                    //{JournalKeys.ModelNodesInfo, false.ToString()},
-                };
-
-                //get all loaded assemblies
-                var loadedAssemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-                //find the Dynamo Revit one
-                var dynamoRevitApplication = loadedAssemblies
-                    .FirstOrDefault(a => a.FullName.Contains("DynamoRevitDS"));
-
-                //create our own instances of these things using reflection. Shoutout to BirdTools for helping with this.
-                object dInst = dynamoRevitApplication.CreateInstance("Dynamo.Applications.DynamoRevit");
-                object dta = dynamoRevitApplication.CreateInstance("Dynamo.Applications.DynamoRevitCommandData");
-                dta.GetType().GetProperty("Application").SetValue(dta, uiApp, null);
-                dta.GetType().GetProperty("JournalData").SetValue(dta, journalData, null);
-
-                object[] parameters = new object[] { dta };
-
-                dInst.GetType().GetMethod("ExecuteCommand").Invoke(dInst, parameters);
-
-                object rdm = dInst.GetType().GetProperty("RevitDynamoModel").GetValue(dInst, null);
-
-                rdm.GetType().GetMethod("ForceRun").Invoke(rdm, new object[] { });
-
-                UpdateLastDynamoDocument(currentDocument);
-
-                return Result.Succeeded;
-            }
-            finally
-            {
-                //clean up the temporary graph copy
-                try { System.IO.File.Delete(tempGraphPath); } catch (Exception ex) { System.Diagnostics.Trace.WriteLine($"[Relay] Failed to delete temporary graph file '{tempGraphPath}': {ex.Message}"); }
-            }
+            if (outcome.Succeeded) DocumentTracker.RecordSuccess(currentDocument);
+        }
+        catch (Exception exception)
+        {
+            outcome = DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, exception.ToString());
+            sessionCleanupFailure = null;
         }
 
-        private static bool ShouldShutdownDynamoModel(Autodesk.Revit.DB.Document currentDocument)
-        {
-            if (currentDocument == null)
-            {
-                return true;
-            }
-
-            if (lastDynamoDocument == null)
-            {
-                return false;
-            }
-
-            return !lastDynamoDocument.TryGetTarget(out var previousDocument)
-                   || !ReferenceEquals(previousDocument, currentDocument);
-        }
-
-        private static void UpdateLastDynamoDocument(Autodesk.Revit.DB.Document currentDocument)
-        {
-            if (currentDocument == null)
-            {
-                lastDynamoDocument = null;
-                return;
-            }
-
-            lastDynamoDocument = new WeakReference<Autodesk.Revit.DB.Document>(currentDocument);
-        }
+        diagnostic = JoinDiagnostics(outcome.Diagnostic, sessionCleanupFailure);
+        if (!string.IsNullOrWhiteSpace(sessionCleanupFailure)) System.Diagnostics.Trace.WriteLine($"[Relay] {sessionCleanupFailure}");
+        if (outcome.Cancelled) return Result.Cancelled;
+        return outcome.Succeeded ? Result.Succeeded : Result.Failed;
     }
+
+    private static string JoinDiagnostics(params string[] diagnostics) =>
+        string.Join(Environment.NewLine, diagnostics.Where(value => !string.IsNullOrWhiteSpace(value)));
 }

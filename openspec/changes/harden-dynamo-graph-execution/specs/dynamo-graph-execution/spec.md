@@ -1,16 +1,21 @@
 ## ADDED Requirements
 
-### Requirement: Relay prepares a temporary automatic graph structurally
+### Requirement: Relay preserves direct graphs and prepares binding copies structurally
 
-Relay SHALL create a temporary copy of the selected graph and set its top-level run mode to automatic through JSON-aware processing without modifying the source file.
+Relay SHALL execute an empty-binding graph from the selected path without rewriting it. When supplied bindings require a mutable graph, Relay SHALL create a JSON-aware temporary copy that preserves the source run mode and does not modify the source file.
 
-#### Scenario: Manual graph is prepared
-- **WHEN** a valid graph has top-level `RunType` set to `Manual`
-- **THEN** the temporary copy has top-level `RunType` set to `Automatic`
+#### Scenario: Manual graph is executed directly
+- **WHEN** a valid graph has no supplied input bindings
+- **THEN** Relay passes the selected graph path to DynamoRevit without rewriting the graph
+- **AND** the source graph remains byte-for-byte unchanged
+
+#### Scenario: Manual graph is prepared for binding
+- **WHEN** a valid graph with top-level `RunType` set to `Manual` requires a temporary binding copy
+- **THEN** the temporary copy retains top-level `RunType` set to `Manual`
 - **AND** the source graph remains byte-for-byte unchanged
 
 #### Scenario: Graph JSON is invalid
-- **WHEN** the selected graph cannot be parsed as valid Dynamo JSON
+- **WHEN** a graph required for staged binding cannot be parsed as valid Dynamo JSON
 - **THEN** Relay returns a failed execution outcome with the graph path and parse context
 - **AND** Dynamo is not invoked
 
@@ -27,14 +32,15 @@ Relay MUST validate the required DynamoRevit assembly, types, staged execution m
 - **THEN** Relay returns a failed command result
 - **AND** reports the missing compatibility boundary without a null-reference failure
 
-### Requirement: Graph execution is staged before evaluation
+### Requirement: Graph execution selects a direct or staged one-shot path
 
-Relay SHALL expose graph preparation, paused load, typed binding, and evaluation as ordered execution stages and SHALL NOT evaluate a graph merely by loading it.
+Relay SHALL use DynamoRevit's supported UI-less execution command for empty bindings and SHALL expose graph preparation, paused load, typed binding, and evaluation as ordered stages when bindings are supplied.
 
 #### Scenario: Graph is loaded for direct execution
-- **WHEN** a prepared graph has no supplied input bindings
-- **THEN** Relay loads it without evaluation
-- **AND** evaluates it once only after the empty binding set is accepted
+- **WHEN** a selected graph has no supplied input bindings
+- **THEN** Relay forces manual paused load and temporarily selects synchronous scheduler processing
+- **AND** does not enable Dynamo automation/test mode
+- **AND** resets and attaches the engine without dirtying nodes, marks every loaded node for forced execution, and calls workspace `Run()` exactly once before restoring the prior scheduler mode
 
 #### Scenario: Graph is loaded for input binding
 - **WHEN** a caller supplies validated typed bindings keyed by Dynamo node GUID
@@ -79,10 +85,10 @@ Relay SHALL reuse or shut down Dynamo model state according to the last successf
 
 ### Requirement: Temporary execution files are cleaned up
 
-Relay SHALL attempt to delete every temporary graph copy on success, failure, or cancellation.
+Relay SHALL attempt to delete every temporary graph copy created for staged binding on success, failure, or cancellation.
 
 #### Scenario: Invocation exits
-- **WHEN** Dynamo invocation returns or throws
+- **WHEN** an invocation using a temporary binding copy returns or throws
 - **THEN** Relay attempts temporary-file deletion
 - **AND** reports a cleanup failure separately from the graph execution outcome
 
