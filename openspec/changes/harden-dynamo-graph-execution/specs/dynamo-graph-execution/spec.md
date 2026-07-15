@@ -38,9 +38,9 @@ Relay SHALL use DynamoRevit's supported UI-less execution command for empty bind
 
 #### Scenario: Graph is loaded for direct execution
 - **WHEN** a selected graph has no supplied input bindings
-- **THEN** Relay forces manual load and requests execution through `dynPathExecute`
+- **THEN** Relay forces manual paused load and temporarily selects synchronous scheduler processing
 - **AND** does not enable Dynamo automation/test mode
-- **AND** requests evaluation exactly once
+- **AND** calls `ForceRun()` exactly once before restoring the prior scheduler mode
 
 #### Scenario: Graph is loaded for input binding
 - **WHEN** a caller supplies validated typed bindings keyed by Dynamo node GUID

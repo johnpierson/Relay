@@ -111,10 +111,30 @@ public sealed class DynamoExecutionCoordinatorTests
         Assert.True(tracker.RequiresModelTransition(second));
     }
 
+    [Fact]
+    public void TrackerRetainsLastSuccessfulDocumentUntilItIsReplaced()
+    {
+        var tracker = new SuccessfulDocumentTracker<object>();
+        WeakReference<object> recorded = RecordDocumentWithoutExternalOwner(tracker);
+
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        Assert.True(recorded.TryGetTarget(out _));
+    }
+
     private static DynamoExecutionOutcome Execute(FakeRunner runner, IReadOnlyCollection<DynamoNodeBinding> bindings)
     {
         var coordinator = new DynamoExecutionCoordinator();
         return coordinator.Execute(runner, "graph.dyn", false, bindings, CancellationToken.None, out _);
+    }
+
+    private static WeakReference<object> RecordDocumentWithoutExternalOwner(SuccessfulDocumentTracker<object> tracker)
+    {
+        var document = new object();
+        tracker.RecordSuccess(document);
+        return new WeakReference<object>(document);
     }
 
     private sealed class FakeRunner : IDynamoRunner

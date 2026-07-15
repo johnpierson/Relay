@@ -43,6 +43,14 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         if (journalProperty?.CanWrite != true) return Incompatible("command data", "JournalData property is missing or read-only.");
         if (executeMethod is null) return Incompatible("load", "ExecuteCommand(DynamoRevitCommandData) is missing.");
         if (modelProperty?.CanRead != true) return Incompatible("model", "RevitDynamoModel property is missing or unreadable.");
+        Type modelType = modelProperty.PropertyType;
+        PropertyInfo schedulerProperty = modelType.GetProperty("Scheduler");
+        MethodInfo forceRunMethod = modelType.GetMethod("ForceRun", Type.EmptyTypes);
+        PropertyInfo processModeProperty = schedulerProperty?.PropertyType.GetProperty("ProcessMode");
+        if (schedulerProperty?.CanRead != true) return Incompatible("scheduler", "DynamoModel.Scheduler is missing or unreadable.");
+        if (processModeProperty?.CanRead != true || processModeProperty.CanWrite != true)
+            return Incompatible("scheduler", "DynamoScheduler.ProcessMode is missing or not writable.");
+        if (forceRunMethod is null) return Incompatible("evaluation", "DynamoModel.ForceRun() is missing.");
 
         members = new AdapterMembers(applicationType, commandDataType, applicationProperty, journalProperty, executeMethod, modelProperty);
         return DynamoCompatibilityResult.Compatible();
@@ -74,18 +82,20 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         var journal = new Dictionary<string, string>
         {
             [JournalKeys.ShowUiKey] = false.ToString(),
-            // Automation mode starts Dynamo in its internal test mode. Normal Relay
-            // commands must use DynamoRevit's asynchronous Revit scheduler instead.
+            // Automation mode starts Dynamo in its internal test mode. Start the
+            // normal UI-less model; the evaluator controls only one scheduler run.
             [JournalKeys.AutomationModeKey] = false.ToString(),
             ["dynPath"] = graphPath,
-            [JournalKeys.DynPathExecuteKey] = true.ToString(),
-            // Loading manually prevents Automatic graphs from evaluating once during
-            // open and again through dynPathExecute.
+            [JournalKeys.DynPathExecuteKey] = false.ToString(),
+            // Load paused, then run once while the public Dynamo scheduler is
+            // temporarily in synchronous mode inside this Revit API context.
             [JournalKeys.ForceManualRunKey] = true.ToString(),
             [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
         };
-        InvokeCommand(journal, "starting one UI-less graph evaluation");
-        return DynamoExecutionOutcome.Success();
+        object dynamo = InvokeCommand(journal, "loading the graph for one UI-less evaluation");
+        object model = members.ModelProperty.GetValue(dynamo)
+            ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after graph load.");
+        return SynchronousDynamoEvaluator.Evaluate(model, adapterName);
     }
 
     private object InvokeCommand(IDictionary<string, string> journal, string operation)

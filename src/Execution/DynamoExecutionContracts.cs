@@ -135,17 +135,17 @@ internal static class ExceptionDiagnostics
 
 internal sealed class SuccessfulDocumentTracker<TDocument> where TDocument : class
 {
-    private WeakReference<TDocument> lastSuccessfulDocument;
+    private TDocument lastSuccessfulDocument;
 
     internal bool RequiresModelTransition(TDocument currentDocument)
     {
         if (currentDocument is null) return true;
         if (lastSuccessfulDocument is null) return false;
-        return !lastSuccessfulDocument.TryGetTarget(out TDocument previous) || !ReferenceEquals(previous, currentDocument);
+        return !ReferenceEquals(lastSuccessfulDocument, currentDocument);
     }
 
     internal void RecordSuccess(TDocument currentDocument)
     {
-        lastSuccessfulDocument = currentDocument is null ? null : new WeakReference<TDocument>(currentDocument);
+        lastSuccessfulDocument = currentDocument;
     }
 }

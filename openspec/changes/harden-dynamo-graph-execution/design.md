@@ -19,7 +19,7 @@
 ## Decisions
 
 1. Run empty-binding commands from the selected `.dyn` path without rewriting it. When binding requires a mutable copy, parse and write that copy with `JsonNode`/`JsonDocument` semantics while preserving its top-level `RunType`. Literal replacement and forced `Automatic` mode are rejected because they can silently change execution count.
-2. Define an `IDynamoRunner` with two paths through one adapter per materially different DynamoRevit surface. Empty bindings use DynamoRevit's supported UI-less `dynPathExecute` command with forced manual load so the graph is requested exactly once. Supplied bindings create an `IDynamoExecutionSession` whose validated load, bind, and evaluate stages keep graph load paused until the caller explicitly evaluates it.
+2. Define an `IDynamoRunner` with two paths through one adapter per materially different DynamoRevit surface. Empty bindings load UI-less and paused, temporarily set the public Dynamo scheduler `ProcessMode` to `Synchronous`, call `ForceRun()` exactly once inside the active Revit API context, and restore the prior scheduler mode. Supplied bindings create an `IDynamoExecutionSession` whose validated load, bind, and evaluate stages keep graph load paused until the caller explicitly evaluates it.
 3. Keep typed binding contracts version-neutral and keyed by Dynamo node GUID. The hardening layer does not discover inputs or interpret UI values; it validates that each supplied binding targets the expected runtime node and delegates version-specific mutation to the adapter.
 4. Isolate reflection where public compile-time APIs cannot span versions. Each adapter validates assembly identity, required types, execution members, input-binding members, and compatible signatures before the relevant stage.
 5. Return typed preparation, load, binding, invocation, cancellation, and cleanup outcomes that map to a Revit `Result` and detailed diagnostic. Unexpected exceptions retain stack/context and are not converted to success.
@@ -29,7 +29,8 @@
 ## Risks / Trade-offs
 
 - [Reflected Dynamo surface changes] -> Keep adapters small, validate eagerly, and host-test each supported matrix entry.
-- [A loaded graph evaluates before bindings are applied] -> Force manual load for direct execution and configure paused load before every staged binding session.
+- [A loaded graph evaluates before bindings are applied] -> Force manual paused load for direct execution and every staged binding session.
+- [A queued Revit evaluation never reaches the idle scheduler] -> Process the one direct evaluation synchronously, without enabling Dynamo automation/test mode, and restore the scheduler mode afterward.
 - [Partially applied bindings leave ambiguous state] -> Prevent evaluation after any binding failure and dispose the entire execution session.
 - [JSON serialization changes formatting] -> Operate only on the temporary copy and verify semantic preservation in tests.
 - [Model shutdown policy loses performance] -> Prefer correctness across documents; measure before introducing reuse optimization.

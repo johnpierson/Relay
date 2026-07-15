@@ -21,5 +21,6 @@
     <Compile Include="..\..\src\Configuration\GraphDirectoryDiscovery.cs" Link="Configuration\GraphDirectoryDiscovery.cs" />
     <Compile Include="..\..\src\Execution\TemporaryDynamoGraph.cs" Link="Execution\TemporaryDynamoGraph.cs" />
     <Compile Include="..\..\src\Execution\DynamoExecutionContracts.cs" Link="Execution\DynamoExecutionContracts.cs" />
+    <Compile Include="..\..\src\Execution\SynchronousDynamoEvaluator.cs" Link="Execution\SynchronousDynamoEvaluator.cs" />
   </ItemGroup>
 </Project>
