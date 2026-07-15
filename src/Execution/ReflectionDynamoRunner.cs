@@ -74,15 +74,17 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
         var journal = new Dictionary<string, string>
         {
             [JournalKeys.ShowUiKey] = false.ToString(),
-            // Dynamo documents automation mode as a synchronous main-thread execution
-            // path that does not depend on Revit's idle loop.
-            [JournalKeys.AutomationModeKey] = true.ToString(),
+            // Automation mode starts Dynamo in its internal test mode. Normal Relay
+            // commands must use DynamoRevit's asynchronous Revit scheduler instead.
+            [JournalKeys.AutomationModeKey] = false.ToString(),
             ["dynPath"] = graphPath,
             [JournalKeys.DynPathExecuteKey] = true.ToString(),
-            [JournalKeys.ForceManualRunKey] = false.ToString(),
+            // Loading manually prevents Automatic graphs from evaluating once during
+            // open and again through dynPathExecute.
+            [JournalKeys.ForceManualRunKey] = true.ToString(),
             [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
         };
-        InvokeCommand(journal, "executing the graph synchronously");
+        InvokeCommand(journal, "starting one UI-less graph evaluation");
         return DynamoExecutionOutcome.Success();
     }
 

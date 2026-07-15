@@ -1,14 +1,14 @@
 ## 1. Graph Preparation
 
-- [x] 1.1 Replace text substitution in `DynamoUtils.SetToAutomatic` with JSON-aware temporary graph preparation
-- [x] 1.2 Add or reuse a Relay test project and verify run-mode updates, semantic field preservation, invalid JSON, source immutability, and cleanup
+- [x] 1.1 Replace text substitution in `DynamoUtils.SetToAutomatic` with JSON-aware temporary graph preparation that preserves run mode
+- [x] 1.2 Add or reuse a Relay test project and verify run-mode preservation, semantic field preservation, invalid JSON, source immutability, and cleanup
 - [x] 1.3 Add a disposable temporary-graph owner that reports cleanup failures separately
 
 ## 2. Dynamo Adapter
 
 - [x] 2.1 Define typed Dynamo runner, disposable execution session, version-neutral node-GUID binding, adapter validation, and execution outcome boundaries
-- [x] 2.2 Implement and validate paused load, empty binding, explicit one-shot evaluation, and cleanup in the Revit 2025/Dynamo 3.0 adapter
-- [x] 2.3 Implement and validate paused load, empty binding, explicit one-shot evaluation, and cleanup in the Revit 2026/Dynamo 3.6 adapter
+- [x] 2.2 Implement and validate direct empty-binding execution plus paused staged execution in the Revit 2025/Dynamo 3.0 adapter
+- [x] 2.3 Implement and validate direct empty-binding execution plus paused staged execution in the Revit 2026/Dynamo 3.6 adapter
 - [ ] 2.4 Confirm the Revit 2027 staged execution and runtime binding surface and implement its isolated adapter
 - [x] 2.5 Validate expected runtime node identity before applying a supplied binding and prevent evaluation after any binding failure
 - [x] 2.6 Map preparation, load, compatibility, binding, invocation, cancellation, and cleanup outcomes to Revit command results and diagnostics

@@ -49,7 +49,6 @@ internal sealed class TemporaryDynamoGraph : IDisposable
             throw new DynamoGraphPreparationException(sourcePath, new JsonException("The graph root must be a JSON object."));
         }
 
-        graph["RunType"] = "Automatic";
         string temporaryPath = fileSystem.CreatePath(sourcePath);
         try
         {

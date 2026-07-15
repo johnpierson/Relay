@@ -71,15 +71,15 @@ internal sealed class DynamoExecutionCoordinator
         {
             try
             {
-                // Dynamo's automation mode executes synchronously on Revit's main thread.
-                // This avoids queuing an asynchronous evaluation from Relay's Idling callback.
+                // Empty-binding button runs do not need a rewritten temporary graph or a
+                // paused reflection session. Use DynamoRevit's supported UI-less path.
                 return runner.ExecuteDirect(graphPath, shutdownExistingModel);
             }
             catch (Exception exception)
             {
                 return DynamoExecutionOutcome.Failure(
                     DynamoExecutionStage.Invocation,
-                    $"Dynamo synchronous execution failed: {ExceptionDiagnostics.Describe(exception)}");
+                    $"Dynamo UI-less execution failed: {ExceptionDiagnostics.Describe(exception)}");
             }
         }
 

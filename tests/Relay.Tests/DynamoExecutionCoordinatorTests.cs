@@ -5,7 +5,7 @@ namespace Relay.Tests;
 public sealed class DynamoExecutionCoordinatorTests
 {
     [Fact]
-    public void EmptyBindingsExecuteSynchronouslyWithoutCreatingPausedSession()
+    public void EmptyBindingsUseDirectHeadlessExecutionWithoutCreatingPausedSession()
     {
         var runner = new FakeRunner();
         var outcome = Execute(runner, Array.Empty<DynamoNodeBinding>());

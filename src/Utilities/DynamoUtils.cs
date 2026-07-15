@@ -11,8 +11,8 @@ namespace Relay.Utilities
             IDictionary<string, string> journalData = new Dictionary<string, string>
             {
                 {JournalKeys.ShowUiKey, false.ToString()},
-                {JournalKeys.AutomationModeKey, true.ToString()},
-                {JournalKeys.DynPathExecuteKey, true.ToString()},
+                {JournalKeys.AutomationModeKey, false.ToString()},
+                {JournalKeys.DynPathExecuteKey, false.ToString()},
                 {JournalKeys.ForceManualRunKey, false.ToString()},
                 {JournalKeys.ModelShutDownKey, true.ToString()},
                 {JournalKeys.ModelNodesInfo, false.ToString()},

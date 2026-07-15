@@ -7,13 +7,13 @@ namespace Relay.Tests;
 public sealed class TemporaryDynamoGraphTests
 {
     [Fact]
-    public void PreparationUpdatesOnlyTopLevelRunTypeAndPreservesSource()
+    public void PreparationPreservesRunTypesAndSource()
     {
         const string source = "{\"RunType\":\"Manual\",\"Name\":\"RunType: Manual\",\"Nested\":{\"RunType\":\"Manual\"}}";
         var files = new FakeFileSystem(source);
         using var graph = TemporaryDynamoGraph.Create("source.dyn", files);
         JsonNode prepared = JsonNode.Parse(files.WrittenText);
-        Assert.Equal("Automatic", prepared?["RunType"]?.GetValue<string>());
+        Assert.Equal("Manual", prepared?["RunType"]?.GetValue<string>());
         Assert.Equal("Manual", prepared?["Nested"]?["RunType"]?.GetValue<string>());
         Assert.Equal("RunType: Manual", prepared?["Name"]?.GetValue<string>());
         Assert.Equal(source, files.SourceText);

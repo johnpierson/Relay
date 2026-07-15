@@ -11,17 +11,6 @@ internal static class DynamoMethods
     internal static Result RunGraph(UIApplication uiApp, string dynamoJournal, out string diagnostic)
     {
         diagnostic = null;
-        TemporaryDynamoGraph temporaryGraph;
-        try
-        {
-            temporaryGraph = TemporaryDynamoGraph.Create(dynamoJournal);
-        }
-        catch (Exception exception)
-        {
-            diagnostic = exception.Message;
-            return Result.Failed;
-        }
-
         DynamoExecutionOutcome outcome;
         string sessionCleanupFailure;
         try
@@ -31,7 +20,7 @@ internal static class DynamoMethods
             var coordinator = new DynamoExecutionCoordinator();
             outcome = coordinator.Execute(
                 new ReflectionDynamoRunner(uiApp),
-                temporaryGraph.Path,
+                dynamoJournal,
                 transitionModel,
                 Array.Empty<DynamoNodeBinding>(),
                 CancellationToken.None,
@@ -44,14 +33,9 @@ internal static class DynamoMethods
             outcome = DynamoExecutionOutcome.Failure(DynamoExecutionStage.Invocation, exception.ToString());
             sessionCleanupFailure = null;
         }
-        finally
-        {
-            temporaryGraph.Dispose();
-        }
 
-        diagnostic = JoinDiagnostics(outcome.Diagnostic, sessionCleanupFailure, temporaryGraph.CleanupFailure);
+        diagnostic = JoinDiagnostics(outcome.Diagnostic, sessionCleanupFailure);
         if (!string.IsNullOrWhiteSpace(sessionCleanupFailure)) System.Diagnostics.Trace.WriteLine($"[Relay] {sessionCleanupFailure}");
-        if (!string.IsNullOrWhiteSpace(temporaryGraph.CleanupFailure)) System.Diagnostics.Trace.WriteLine($"[Relay] {temporaryGraph.CleanupFailure}");
         if (outcome.Cancelled) return Result.Cancelled;
         return outcome.Succeeded ? Result.Succeeded : Result.Failed;
     }
