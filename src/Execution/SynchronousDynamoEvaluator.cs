@@ -56,8 +56,28 @@ internal static class SynchronousDynamoEvaluator
 
         Exception invocationFailure = null;
         Exception restorationFailure = null;
+        var evaluationExceptions = new List<string>();
+        EventHandler<System.Runtime.ExceptionServices.FirstChanceExceptionEventArgs> firstChanceHandler = (_, args) =>
+        {
+            Type declaringType = args.Exception.TargetSite?.DeclaringType;
+            string assemblyName = declaringType?.Assembly.GetName().Name ?? string.Empty;
+            if (!assemblyName.StartsWith("Dynamo", StringComparison.Ordinal)
+                && !assemblyName.StartsWith("ProtoCore", StringComparison.Ordinal)
+                && !assemblyName.StartsWith("DSRevit", StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            string detail = $"{args.Exception.GetType().FullName} in {declaringType?.FullName ?? assemblyName}: {args.Exception.Message}";
+            lock (evaluationExceptions)
+            {
+                if (evaluationExceptions.Count < 8 && !evaluationExceptions.Contains(detail, StringComparer.Ordinal))
+                    evaluationExceptions.Add(detail);
+            }
+        };
         try
         {
+            AppDomain.CurrentDomain.FirstChanceException += firstChanceHandler;
             processModeProperty.SetValue(scheduler, synchronousMode);
             resetEngine.Invoke(model, new object[] { false });
             for (int index = 0; index < nodeList.Length; index++)
@@ -70,6 +90,7 @@ internal static class SynchronousDynamoEvaluator
         }
         finally
         {
+            AppDomain.CurrentDomain.FirstChanceException -= firstChanceHandler;
             try
             {
                 processModeProperty.SetValue(scheduler, previousMode);
@@ -100,9 +121,13 @@ internal static class SynchronousDynamoEvaluator
         LogToDynamo(model, $"[Relay] EvaluationCount {evaluationCountBefore} -> {evaluationCountAfter}; {runState}; {DescribeNodeStates(workspace)}");
         if (evaluationCountAfter <= evaluationCountBefore)
         {
+            string nodeDiagnostics = DescribeNodeExecutionState(workspace);
+            string exceptionDiagnostics = evaluationExceptions.Count == 0
+                ? "No Dynamo/ProtoCore first-chance exception was observed."
+                : "Dynamo evaluation exceptions: " + string.Join(" | ", evaluationExceptions);
             return DynamoExecutionOutcome.Failure(
                 DynamoExecutionStage.Invocation,
-                $"Dynamo loaded the graph but did not evaluate it in the {adapterName} adapter. EvaluationCount remained {evaluationCountAfter}; {runState}.");
+                $"Dynamo loaded the graph but did not evaluate it in the {adapterName} adapter. EvaluationCount remained {evaluationCountAfter}; {runState}; {nodeDiagnostics}. {exceptionDiagnostics}");
         }
 
         object hasRunWithoutCrash = workspace.GetType().GetProperty("HasRunWithoutCrash")?.GetValue(workspace);
@@ -148,6 +173,32 @@ internal static class SynchronousDynamoEvaluator
             ? "Node states empty"
             : "Node states: " + string.Join(", ", states.OrderBy(pair => pair.Key).Select(pair => $"{pair.Key}={pair.Value}"));
     }
+
+    private static string DescribeNodeExecutionState(object workspace)
+    {
+        object nodesValue = workspace.GetType().GetProperty("Nodes")?.GetValue(workspace);
+        if (nodesValue is not IEnumerable nodes) return "Node execution state unavailable";
+
+        object[] nodeList = nodes.Cast<object>().Where(node => node is not null).ToArray();
+        int modified = nodeList.Count(node => ReadBoolean(node, "IsModified"));
+        int forceExecution = nodeList.Count(node => ReadBoolean(node, "NeedsForceExecution"));
+        int inError = nodeList.Count(node => ReadBoolean(node, "IsInErrorState"));
+        int frozen = nodeList.Count(node => ReadBoolean(node, "IsFrozen"));
+        int transient = nodeList.Count(node => ReadBoolean(node, "IsTransient"));
+        string[] errorTypes = nodeList
+            .Where(node => ReadBoolean(node, "IsInErrorState"))
+            .Select(node => node.GetType().FullName ?? node.GetType().Name)
+            .Distinct(StringComparer.Ordinal)
+            .Take(4)
+            .ToArray();
+        string errors = errorTypes.Length == 0 ? "none" : string.Join(", ", errorTypes);
+        return $"Nodes={nodeList.Length}, Modified={modified}, ForceExecution={forceExecution}, InError={inError}, Frozen={frozen}, Transient={transient}, ErrorTypes={errors}";
+    }
+
+    private static bool ReadBoolean(object target, string propertyName) =>
+        target.GetType().GetProperty(
+            propertyName,
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(target) is true;
 
     private static void LogToDynamo(object model, string message)
     {

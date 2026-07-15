@@ -56,6 +56,8 @@ public sealed class SynchronousDynamoEvaluatorTests
         Assert.Contains("did not evaluate", outcome.Diagnostic);
         Assert.Contains("RunEnabled=True", outcome.Diagnostic);
         Assert.Contains("ForceBlockRun=False", outcome.Diagnostic);
+        Assert.Contains("Nodes=2, Modified=2, ForceExecution=2, InError=0", outcome.Diagnostic);
+        Assert.Contains("No Dynamo/ProtoCore first-chance exception", outcome.Diagnostic);
         Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
     }
 
@@ -89,6 +91,11 @@ public sealed class SynchronousDynamoEvaluatorTests
     private sealed class FakeNode
     {
         public bool ForceExecute { get; private set; }
+        public bool IsModified => ForceExecute;
+        public bool NeedsForceExecution => ForceExecute;
+        public bool IsInErrorState => false;
+        public bool IsFrozen => false;
+        public bool IsTransient => false;
         public string State => "Active";
         public void MarkNodeAsModified(bool forceExecute) => ForceExecute = forceExecute;
     }
