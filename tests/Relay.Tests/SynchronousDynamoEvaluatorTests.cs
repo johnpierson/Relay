@@ -13,6 +13,8 @@ public sealed class SynchronousDynamoEvaluatorTests
 
         Assert.True(outcome.Succeeded);
         Assert.Equal(1, model.CurrentWorkspace.RunCount);
+        Assert.Equal(1, model.ResetEngineCount);
+        Assert.False(model.MarkNodesAsDirtyDuringReset);
         Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
         Assert.Equal(FakeProcessMode.Synchronous, model.ModeObservedDuringRun);
         Assert.Equal(1, model.CurrentWorkspace.EvaluationCount);
@@ -100,6 +102,8 @@ public sealed class SynchronousDynamoEvaluatorTests
         public long EvaluationCount { get; private set; }
         public bool HasRunWithoutCrash { get; private set; } = true;
         public bool GraphRunInProgress { get; private set; }
+        public object EngineController { get; internal set; }
+        internal bool IsEvaluationPending => false;
         public FakeRunSettings RunSettings { get; } = new();
         public FakeNode[] Nodes { get; } = new[] { new FakeNode(), new FakeNode() };
         internal int RunCount { get; private set; }
@@ -119,9 +123,18 @@ public sealed class SynchronousDynamoEvaluatorTests
 
         public FakeScheduler Scheduler { get; } = new();
         public FakeWorkspace CurrentWorkspace { get; }
+        internal int ResetEngineCount { get; private set; }
+        internal bool MarkNodesAsDirtyDuringReset { get; private set; }
         internal FakeProcessMode? ModeObservedDuringRun { get; set; }
         internal Exception RunException { get; init; }
         internal bool SkipEvaluation { get; init; }
+
+        public void ResetEngine(bool markNodesAsDirty)
+        {
+            ResetEngineCount++;
+            MarkNodesAsDirtyDuringReset = markNodesAsDirty;
+            CurrentWorkspace.EngineController = new object();
+        }
     }
 
     private sealed class ModelWithoutScheduler
@@ -133,6 +146,9 @@ public sealed class SynchronousDynamoEvaluatorTests
     {
         public FakeScheduler Scheduler { get; } = new();
         public IncompatibleWorkspace CurrentWorkspace { get; } = new();
+        public void ResetEngine(bool markNodesAsDirty)
+        {
+        }
     }
 
     private sealed class IncompatibleWorkspace

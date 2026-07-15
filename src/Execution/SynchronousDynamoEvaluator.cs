@@ -16,6 +16,10 @@ internal static class SynchronousDynamoEvaluator
         if (processModeProperty?.CanRead != true || processModeProperty.CanWrite != true)
             return CompatibilityFailure(adapterName, "DynamoScheduler.ProcessMode is missing or not writable.");
 
+        MethodInfo resetEngine = model.GetType().GetMethod("ResetEngine", new[] { typeof(bool) });
+        if (resetEngine is null)
+            return CompatibilityFailure(adapterName, "DynamoModel.ResetEngine(bool) is missing.");
+
         object workspace = model.GetType().GetProperty("CurrentWorkspace")?.GetValue(model);
         if (workspace is null)
             return CompatibilityFailure(adapterName, "DynamoModel.CurrentWorkspace is unavailable.");
@@ -55,6 +59,7 @@ internal static class SynchronousDynamoEvaluator
         try
         {
             processModeProperty.SetValue(scheduler, synchronousMode);
+            resetEngine.Invoke(model, new object[] { false });
             for (int index = 0; index < nodeList.Length; index++)
                 markMethods[index].Invoke(nodeList[index], new object[] { true });
             run.Invoke(workspace, null);
@@ -121,7 +126,11 @@ internal static class SynchronousDynamoEvaluator
         object graphRunInProgress = workspace.GetType().GetProperty(
             "GraphRunInProgress",
             BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(workspace);
-        return $"RunEnabled={runEnabled ?? "unavailable"}, ForceBlockRun={forceBlockRun ?? "unavailable"}, GraphRunInProgress={graphRunInProgress ?? "unavailable"}";
+        object engineController = workspace.GetType().GetProperty("EngineController")?.GetValue(workspace);
+        object evaluationPending = workspace.GetType().GetProperty(
+            "IsEvaluationPending",
+            BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(workspace);
+        return $"RunEnabled={runEnabled ?? "unavailable"}, ForceBlockRun={forceBlockRun ?? "unavailable"}, GraphRunInProgress={graphRunInProgress ?? "unavailable"}, EngineController={(engineController is null ? "unavailable" : "available")}, IsEvaluationPending={evaluationPending ?? "unavailable"}";
     }
 
     private static string DescribeNodeStates(object workspace)
