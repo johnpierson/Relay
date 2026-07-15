@@ -2,11 +2,12 @@
 
 ### Requirement: Synchronization discovers a complete graph snapshot
 
-Relay SHALL discover normalized `.dyn` paths grouped by their configured tab and panel before changing ribbon state.
+Relay SHALL discover normalized `.dyn` paths grouped by typed tab and panel identity before changing ribbon state.
 
 #### Scenario: Discovery succeeds
 - **WHEN** the configured graph tree can be enumerated
 - **THEN** Relay produces one complete snapshot of applicable graphs for the active Revit version
+- **AND** Relay changes no ribbon state until that snapshot is complete
 
 #### Scenario: Discovery fails
 - **WHEN** an applicable directory cannot be enumerated
@@ -36,9 +37,14 @@ Relay SHALL add newly discovered graphs and hide only controls whose mapped grap
 - **THEN** synchronization hides that graph's control
 - **AND** removes its path from active graph lookup after reconciliation
 
+#### Scenario: Graph returns at the same path
+- **WHEN** a graph previously removed from a complete snapshot returns at the same normalized path
+- **THEN** synchronization reactivates its historical control when the host supports reuse
+- **AND** maintains exactly one active mapping for that graph path
+
 ### Requirement: Panel visibility reflects complete membership
 
-Relay SHALL evaluate panel visibility from all tracked controls in that panel rather than only controls created by the latest synchronization.
+Relay SHALL evaluate panel visibility from all tracked controls in the same tab-and-panel identity rather than only controls created by the latest synchronization.
 
 #### Scenario: Panel retains a valid graph
 - **WHEN** at least one graph mapped to a panel remains active

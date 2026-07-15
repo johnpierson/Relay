@@ -1,17 +1,17 @@
 ## Why
 
-Syncing graphs can throw while removing dictionary entries during enumeration and can lose panel membership when only newly created buttons are recorded. The result is a user-visible ribbon that hides valid graph buttons or entire panels after a sync.
+PR #35 stopped Sync Graphs from mutating its button dictionary during enumeration and made new controls append to panel membership. The remaining implementation still discovers and mutates ribbon state in one host-bound traversal, derives graph identity from presentation metadata, and cannot reliably reactivate a historical control when a graph returns.
 
 ## Problem
 
-Relay treats incremental additions as the complete panel state, mutates the button registry while iterating it, and derives graph identity from tooltip text that is not consistently available through Autodesk ribbon events.
+Relay has no complete discovery snapshot or typed reconciliation model. It compares individual files against global dictionaries while creating controls, keys panels only by panel name, and removes missing paths from active lookup without retaining enough identity to reuse their hidden controls.
 
 ## Scope
 
-- Reconcile discovered graph paths with existing ribbon state without removing live entries during enumeration.
-- Preserve complete panel membership across repeated syncs.
+- Build a complete, normalized discovery snapshot before changing ribbon state.
+- Reconcile that snapshot against typed tab, panel, graph, and historical-control state.
 - Hide only buttons whose graph no longer exists and hide a panel only when all tracked buttons are hidden.
-- Restore panels and buttons when valid content remains or is added.
+- Restore panels and reuse historical controls when valid content remains or returns at the same path.
 
 ## Non-goals
 
@@ -21,10 +21,11 @@ Relay treats incremental additions as the complete panel state, mutates the butt
 
 ## What Changes
 
-- Replace in-loop registry mutation with a reconciliation pass.
-- Merge newly created items into panel state rather than replacing prior membership.
-- Ensure graph metadata remains available to both Revit and Autodesk ribbon representations.
-- Add focused tests for discovery and reconciliation logic outside the Revit host.
+- Extract complete graph discovery and snapshot comparison from `RibbonUtils.SyncGraphs`.
+- Replace global dictionary cleanup with a typed, two-phase reconciliation plan.
+- Identify panels by tab and panel, and keep graph identity independent from tooltip or description text.
+- Reactivate reusable historical controls when a graph returns at the same normalized path.
+- Extend the existing Relay test project with focused discovery and reconciliation coverage.
 
 ## Capabilities
 
@@ -39,6 +40,7 @@ None.
 ## Risks
 
 - Autodesk ribbon items cannot be physically removed, so hidden controls must remain tracked correctly.
+- Reusing a hidden control may expose host-version differences and requires Revit verification.
 - Revit ribbon API behavior may differ between supported host versions.
 
 ## Compatibility
@@ -47,4 +49,4 @@ Applies to Revit 2025, 2026, and 2027. No Dynamo API behavior is changed.
 
 ## Impact
 
-Primarily affects `src/Utilities/RibbonUtils.cs`, `src/Utilities/Globals.cs`, and tests for pure graph-state reconciliation.
+Primarily affects `src/Utilities/RibbonUtils.cs`, `src/Utilities/Globals.cs`, new pure synchronization models, and `tests/Relay.Tests`. PR #35 already supplies safe dictionary enumeration, cumulative panel membership, failed-root preservation, and the reusable test project baseline.
