@@ -21,6 +21,11 @@ internal static class DynamoMethods
         // dialog entirely and go straight to execution.
         var graphInputs = DynamoInputParser.ParseGraphInputs(dynamoJournal);
 
+        // Nodes marked IsSetAsOutput are read back after evaluation and shown to the user.
+        // Node ids survive into the temporary copy, so the source graph is the right place
+        // to discover them.
+        var graphOutputs = DynamoOutputParser.ParseGraphOutputs(dynamoJournal);
+
         // Populate items for Revit-backed dropdown nodes (e.g. Categories)
         try
         {
@@ -66,7 +71,7 @@ internal static class DynamoMethods
             bool transitionModel = DocumentTracker.RequiresModelTransition(currentDocument);
             var coordinator = new DynamoExecutionCoordinator();
             outcome = coordinator.Execute(
-                new ReflectionDynamoRunner(uiApp),
+                new ReflectionDynamoRunner(uiApp, graphOutputs.Outputs),
                 graphToRun,
                 transitionModel,
                 Array.Empty<DynamoNodeBinding>(),
@@ -96,7 +101,64 @@ internal static class DynamoMethods
         if (!string.IsNullOrWhiteSpace(inputWarning)) System.Diagnostics.Trace.WriteLine($"[Relay] {inputWarning}");
         if (!string.IsNullOrWhiteSpace(sessionCleanupFailure)) System.Diagnostics.Trace.WriteLine($"[Relay] {sessionCleanupFailure}");
         if (outcome.Cancelled) return Result.Cancelled;
+
+        if (outcome.Succeeded && outcome.Outputs.Count > 0)
+            ShowOutputs(uiApp, graphOutputs.GraphName ?? graphInputs.GraphName, outcome.Outputs);
+
         return outcome.Succeeded ? Result.Succeeded : Result.Failed;
+    }
+
+    /// <summary>
+    /// Shows the results window and applies an element selection if the user asked for one.
+    /// The graph has already run at this point, so nothing here may fail the command.
+    /// </summary>
+    private static void ShowOutputs(UIApplication uiApp, string graphName, IReadOnlyList<GraphOutputValue> outputs)
+    {
+        try
+        {
+            var dialog = new OutputDialog(graphName, outputs);
+            try
+            {
+                new System.Windows.Interop.WindowInteropHelper(dialog).Owner = uiApp.MainWindowHandle;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine($"[Relay] Could not set results dialog owner: {ex.Message}");
+            }
+
+            dialog.ShowDialog();
+
+            if (dialog.ElementsToSelect.Count > 0)
+                SelectElements(uiApp, dialog.ElementsToSelect);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"[Relay] Could not show graph results: {ex.Message}");
+        }
+    }
+
+    private static void SelectElements(UIApplication uiApp, IReadOnlyList<long> elementIds)
+    {
+        try
+        {
+            var uiDoc = uiApp.ActiveUIDocument;
+            if (uiDoc == null) return;
+
+            var ids = new List<ElementId>(elementIds.Count);
+            foreach (long id in elementIds)
+            {
+                var elementId = new ElementId(id);
+                // The graph may have returned elements from a document that is no longer
+                // active, or ids that were deleted during the run.
+                if (uiDoc.Document.GetElement(elementId) != null) ids.Add(elementId);
+            }
+
+            if (ids.Count > 0) uiDoc.Selection.SetElementIds(ids);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.WriteLine($"[Relay] Could not select result elements: {ex.Message}");
+        }
     }
 
     /// <summary>

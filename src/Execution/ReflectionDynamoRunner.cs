@@ -12,9 +12,22 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
     private readonly Func<IEnumerable<Assembly>> assemblyProvider;
     private AdapterMembers members;
 
+    private readonly IReadOnlyCollection<Relay.Classes.DynamoOutputDefinition> declaredOutputs;
+
     internal ReflectionDynamoRunner(UIApplication application)
         : this(application, GetAdapterName(), () => AppDomain.CurrentDomain.GetAssemblies())
     {
+    }
+
+    /// <param name="declaredOutputs">
+    /// Nodes the graph marks as outputs, whose values are read back after evaluation.
+    /// </param>
+    internal ReflectionDynamoRunner(
+        UIApplication application,
+        IReadOnlyCollection<Relay.Classes.DynamoOutputDefinition> declaredOutputs)
+        : this(application, GetAdapterName(), () => AppDomain.CurrentDomain.GetAssemblies())
+    {
+        this.declaredOutputs = declaredOutputs;
     }
 
     internal ReflectionDynamoRunner(UIApplication application, string adapterName, Func<IEnumerable<Assembly>> assemblyProvider)
@@ -101,7 +114,7 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after graph load.");
         // The graph is opened by the evaluator rather than left to the dynPath journal
         // key, which DynamoRevit only honors on some of its internal branches.
-        return SynchronousDynamoEvaluator.Evaluate(model, adapterName, graphPath);
+        return SynchronousDynamoEvaluator.Evaluate(model, adapterName, graphPath, declaredOutputs);
     }
 
     private object InvokeCommand(IDictionary<string, string> journal, string operation)

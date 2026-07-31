@@ -112,6 +112,17 @@ Tips for graph authors:
 
 [Data-Shapes](https://data-shapes.io/) UI graphs remain fully supported — if your graph opens its own input window, simply don't mark nodes as inputs and it will run as-is.
 
+## 📤 Showing Results:
+
+Mark any node as **Is Output** (again, the same convention Dynamo Player uses) and Relay shows its value in a results window once the graph finishes. Graphs with no marked outputs finish silently, exactly as before.
+
+- Nested Dynamo lists stay nested — each list is an expandable row showing its item count, so a big result is glanceable but you can drill into it.
+- Outputs that are Revit elements get a **Select** button that selects them in the model.
+- **Copy** puts the whole result set on the clipboard as indented text.
+- Outputs in a Dynamo group are grouped in the window, and the output's name is used as its label — so rename the node from `Watch` to something meaningful.
+
+> 💡 Reading results never fails a run. If Relay can't read a value, that one output says so and the rest still display — your graph has already executed by that point.
+
 ### Selecting Model Elements:
 Using Data-Shapes for selection.
 ![image](https://github.com/user-attachments/assets/5a49c8f0-5974-4dd2-8e82-ba3f15754320)

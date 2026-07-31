@@ -277,7 +277,8 @@ namespace Relay.UI
                 Focusable = false
             };
 
-            var inputPanel = new StackPanel();
+            // Right inset keeps the cards clear of the scroll bar when one appears
+            var inputPanel = new StackPanel { Margin = new Thickness(0, 0, 8, 0) };
             BuildGroupedInputs(inputPanel);
 
             scrollViewer.Content = inputPanel;

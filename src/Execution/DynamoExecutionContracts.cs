@@ -17,7 +17,17 @@ internal sealed record DynamoExecutionOutcome(
     DynamoExecutionStage Stage,
     string Diagnostic)
 {
+    /// <summary>
+    /// Values of the nodes the graph author marked as outputs. Empty when the graph
+    /// declares none, or when the run did not reach evaluation.
+    /// </summary>
+    internal IReadOnlyList<Relay.Classes.GraphOutputValue> Outputs { get; init; }
+        = Array.Empty<Relay.Classes.GraphOutputValue>();
+
     internal static DynamoExecutionOutcome Success() => new(true, false, DynamoExecutionStage.Invocation, null);
+
+    internal static DynamoExecutionOutcome Success(IReadOnlyList<Relay.Classes.GraphOutputValue> outputs) =>
+        new(true, false, DynamoExecutionStage.Invocation, null) { Outputs = outputs };
     internal static DynamoExecutionOutcome Failure(DynamoExecutionStage stage, string diagnostic) => new(false, false, stage, diagnostic);
     internal static DynamoExecutionOutcome Cancel(string diagnostic) => new(false, true, DynamoExecutionStage.Cancellation, diagnostic);
 }

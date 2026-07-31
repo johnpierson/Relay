@@ -18,7 +18,11 @@ internal static class SynchronousDynamoEvaluator
     /// reused from an earlier run evaluates the graph the user just clicked rather than
     /// the previous one.
     /// </remarks>
-    internal static DynamoExecutionOutcome Evaluate(object model, string adapterName, string graphPath = null)
+    internal static DynamoExecutionOutcome Evaluate(
+        object model,
+        string adapterName,
+        string graphPath = null,
+        IReadOnlyCollection<Relay.Classes.DynamoOutputDefinition> declaredOutputs = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         object scheduler = model.GetType().GetProperty("Scheduler")?.GetValue(model);
@@ -198,7 +202,21 @@ internal static class SynchronousDynamoEvaluator
                 $"Dynamo evaluated the graph in the {adapterName} adapter, but the workspace reported a crash. {DescribeNodeStates(workspace)}");
         }
 
-        return DynamoExecutionOutcome.Success();
+        // Read declared outputs from the evaluated nodes. A failure here must not fail the
+        // run: the graph has already executed and its model changes are committed.
+        IReadOnlyList<Relay.Classes.GraphOutputValue> outputs;
+        try
+        {
+            outputs = DynamoOutputReader.Read(nodeList, declaredOutputs);
+        }
+        catch (Exception exception)
+        {
+            outputs = Array.Empty<Relay.Classes.GraphOutputValue>();
+            System.Diagnostics.Trace.WriteLine(
+                $"[Relay] Could not read graph outputs: {ExceptionDiagnostics.Describe(exception)}");
+        }
+
+        return DynamoExecutionOutcome.Success(outputs);
     }
 
     /// <summary>

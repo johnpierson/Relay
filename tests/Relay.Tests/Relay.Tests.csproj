@@ -20,6 +20,9 @@
     <Compile Include="..\..\src\Configuration\GraphRootResolver.cs" Link="Configuration\GraphRootResolver.cs" />
     <Compile Include="..\..\src\Configuration\GraphDirectoryDiscovery.cs" Link="Configuration\GraphDirectoryDiscovery.cs" />
     <Compile Include="..\..\src\Classes\DynamoInputDefinition.cs" Link="Classes\DynamoInputDefinition.cs" />
+    <Compile Include="..\..\src\Classes\DynamoOutputDefinition.cs" Link="Classes\DynamoOutputDefinition.cs" />
+    <Compile Include="..\..\src\Utilities\DynamoOutputParser.cs" Link="Utilities\DynamoOutputParser.cs" />
+    <Compile Include="..\..\src\Execution\DynamoOutputReader.cs" Link="Execution\DynamoOutputReader.cs" />
     <Compile Include="..\..\src\Utilities\DynamoInputParser.cs" Link="Utilities\DynamoInputParser.cs" />
     <Compile Include="..\..\src\Utilities\NumericInput.cs" Link="Utilities\NumericInput.cs" />
     <Compile Include="..\..\src\Execution\TemporaryDynamoGraph.cs" Link="Execution\TemporaryDynamoGraph.cs" />
