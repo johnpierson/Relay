@@ -41,7 +41,13 @@ namespace Relay
                 return Result.Failed;
             }
             
-            return Methods.DynamoMethods.RunGraph(commandData.Application, dynamoJournal);
+            Result result = Methods.DynamoMethods.RunGraph(commandData.Application, dynamoJournal, out string diagnostic);
+            if (!string.IsNullOrWhiteSpace(diagnostic))
+            {
+                message = diagnostic;
+            }
+
+            return result;
         }
     }
     [Transaction(TransactionMode.Manual)]

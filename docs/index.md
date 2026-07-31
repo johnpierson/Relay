@@ -6,7 +6,7 @@ layout: default
 ![image](https://github.com/user-attachments/assets/6782c5e9-8cf2-4cc1-8daf-a120c97688c2)
 
 Relay is a plugin for Revit developed by [john pierson](johntpierson.com). Relay allows you to add Dynamo graphs (.dyn files) to your ribbon as push button tools.
-This is achieved by launching Dynamo in the background (UI-Less) and running the given Dynamo graph. This requires you to have only one version of Dynamo installed and for your Dynamo Graph to be structured in a way that allows you not to require inputs or use custom nodes to feed inputs. More info here: [Working With Inputs](#-working-with-inputs)
+This is achieved by launching Dynamo in the background (UI-Less) and running the given Dynamo graph. This requires you to have only one version of Dynamo installed. Graphs with nodes marked as inputs (the same convention Dynamo Player uses) automatically get a generated input form before the run. More info here: [Working With Inputs](#-working-with-inputs)
 
 # ⚖ License
 https://tldrlegal.com/license/gnu-general-public-license-v3-(gpl-3)
@@ -88,7 +88,40 @@ _How to structure your folder for success._
 
 # 🏆 Best Practices for Graphs
 ## 🔌 Working with Inputs:
-As you may imagine, what good is a Dynamo graph without being able to interact with it? Dynamo player manages this in its own way, but Relay relies on this interaction being designed by the original Graph author. If you do not build inputs into your graphs with [Data-Shapes](https://data-shapes.io/) or something similar, then your graph will use whatever was selected last.
+Relay generates an input form on the fly for any graph containing nodes marked as **Is Input** — the same authoring convention Dynamo Player uses. When you click the graph's ribbon button, Relay reads the .dyn file, finds the declared inputs, and shows a dialog to collect values before running. Graphs without marked inputs run immediately, exactly as before.
+
+Supported input nodes:
+
+| Dynamo node | Relay control |
+|:------------|:--------------|
+| String | Text box |
+| Number Slider / Integer Slider | Slider with a synced value box (integer sliders snap to whole numbers) |
+| Number / Integer (no range) | Text box with validation |
+| Boolean | Checkbox |
+| File Path | Text box + Browse… file picker |
+| Directory Path | Text box + Browse… folder picker |
+| Categories (and other Revit dropdowns) | Dropdown populated from the active document |
+| Select Model Element / Elements | "Select in Revit…" button that lets you pick in the model |
+
+Tips for graph authors:
+
+- The node's custom **name** becomes the field label, and its **description** shows as help text under the control.
+- Put input nodes in a Dynamo **group** — grouped inputs render together in a titled card, in graph order.
+- Accepted values are applied to a temporary copy of the graph; your source .dyn on disk is never modified.
+- Inputs Relay doesn't support yet are listed in the form for transparency and run with the value saved in the graph.
+
+[Data-Shapes](https://data-shapes.io/) UI graphs remain fully supported — if your graph opens its own input window, simply don't mark nodes as inputs and it will run as-is.
+
+## 📤 Showing Results:
+
+Mark any node as **Is Output** (again, the same convention Dynamo Player uses) and Relay shows its value in a results window once the graph finishes. Graphs with no marked outputs finish silently, exactly as before.
+
+- Nested Dynamo lists stay nested — each list is an expandable row showing its item count, so a big result is glanceable but you can drill into it.
+- Outputs that are Revit elements get a **Select** button that selects them in the model.
+- **Copy** puts the whole result set on the clipboard as indented text.
+- Outputs in a Dynamo group are grouped in the window, and the output's name is used as its label — so rename the node from `Watch` to something meaningful.
+
+> 💡 Reading results never fails a run. If Relay can't read a value, that one output says so and the rest still display — your graph has already executed by that point.
 
 ### Selecting Model Elements:
 Using Data-Shapes for selection.

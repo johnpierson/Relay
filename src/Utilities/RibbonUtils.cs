@@ -375,6 +375,14 @@ namespace Relay.Utilities
                     {
                         FileInfo fInfo = new FileInfo(file);
 
+                        // Skip Relay's own temporary run copies so a crashed run can never
+                        // surface one as a ribbon button.
+                        if (IsTemporaryGraph(fInfo.Name))
+                        {
+                            DeleteIfStale(fInfo);
+                            continue;
+                        }
+
                         var dynPath = fInfo.FullName;
 
                         if (!Globals.RelayButtons.ContainsKey(dynPath))
@@ -395,6 +403,32 @@ namespace Relay.Utilities
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// True when the file is one of Relay's temporary run copies rather than a graph
+        /// the user authored.
+        /// </summary>
+        internal static bool IsTemporaryGraph(string fileName) =>
+            fileName.StartsWith(DynamoInputParser.TempGraphPrefix, StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// Removes a temporary run copy that a crashed or killed session left behind.
+        /// Only files older than a day are touched, so a run in flight — including one
+        /// started by someone else on a shared graph library — is never disturbed.
+        /// </summary>
+        private static void DeleteIfStale(FileInfo temporaryGraph)
+        {
+            try
+            {
+                if (DateTime.UtcNow - temporaryGraph.LastWriteTimeUtc < TimeSpan.FromDays(1)) return;
+                temporaryGraph.Delete();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine(
+                    $"[Relay] Could not remove stale temporary graph '{temporaryGraph.FullName}': {ex.Message}");
+            }
         }
 
     }
