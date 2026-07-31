@@ -7,6 +7,7 @@ namespace Relay.Tests;
 public sealed class DynamoInputParserTests : IDisposable
 {
     private readonly List<string> _tempFiles = new();
+    private readonly List<string> _tempDirectories = new();
 
     public void Dispose()
     {
@@ -14,14 +15,33 @@ public sealed class DynamoInputParserTests : IDisposable
         {
             try { File.Delete(file); } catch { }
         }
+
+        foreach (var directory in _tempDirectories)
+        {
+            try { Directory.Delete(directory, true); } catch { }
+        }
     }
 
+    /// <summary>
+    /// Writes the graph into a directory of its own so that "beside the source graph"
+    /// and "in the system temp folder" are genuinely different locations — writing the
+    /// source into the temp root would make both write candidates resolve to the same
+    /// directory and any placement assertion vacuous.
+    /// </summary>
     private string WriteGraph(string json)
     {
-        var path = Path.Combine(Path.GetTempPath(), $"relay_test_{Guid.NewGuid():N}.dyn");
+        var directory = CreateGraphDirectory();
+        var path = Path.Combine(directory, $"relay_test_{Guid.NewGuid():N}.dyn");
         File.WriteAllText(path, json, System.Text.Encoding.UTF8);
-        _tempFiles.Add(path);
         return path;
+    }
+
+    private string CreateGraphDirectory()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"relay_src_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        _tempDirectories.Add(directory);
+        return directory;
     }
 
     private void TrackTemp(string path)
@@ -355,6 +375,40 @@ public sealed class DynamoInputParserTests : IDisposable
         Assert.Equal("Choice B", input.SelectedString);
     }
 
+    [Fact]
+    public void DuplicateNodeViewEntriesProduceASingleInput()
+    {
+        // A hand-resolved .dyn merge conflict can duplicate a NodeViews entry. Two rows
+        // for one node would render, and whatever the user typed into the first would be
+        // discarded silently.
+        var json = """
+        {
+          "Name": "Duplicated",
+          "Inputs": [
+            { "Id": "id-a", "Name": "Sheet Name", "Type": "string", "Value": "A101" }
+          ],
+          "Nodes": [
+            {
+              "ConcreteType": "CoreNodeModels.Input.StringInput, CoreNodeModels",
+              "Id": "id-a",
+              "InputValue": "A101"
+            }
+          ],
+          "View": {
+            "NodeViews": [
+              { "Id": "id-a", "Name": "Sheet Name", "IsSetAsInput": true },
+              { "Id": "id-a", "Name": "Sheet Name", "IsSetAsInput": true }
+            ]
+          }
+        }
+        """;
+
+        var result = DynamoInputParser.ParseGraphInputs(WriteGraph(json));
+
+        var input = Assert.Single(result.Inputs);
+        Assert.Equal("id-a", input.Id);
+    }
+
     // -------------------------------------------------------------------
     // Write-back
     // -------------------------------------------------------------------
@@ -376,8 +430,12 @@ public sealed class DynamoInputParserTests : IDisposable
             ["id-filepath"] = "C:\\new\\input.xlsx"
         };
 
-        var modifiedPath = DynamoInputParser.ApplyUserValues(sourcePath, userValues);
-        TrackTemp(modifiedPath);
+        var applied = DynamoInputParser.ApplyUserValues(sourcePath, userValues);
+        TrackTemp(applied.Path);
+
+        Assert.True(applied.Succeeded);
+        Assert.Null(applied.Warning);
+        var modifiedPath = applied.Path;
 
         Assert.NotEqual(sourcePath, modifiedPath);
         Assert.Equal(sourceBytes, File.ReadAllBytes(sourcePath)); // source untouched
@@ -385,7 +443,9 @@ public sealed class DynamoInputParserTests : IDisposable
         // The copy lives beside the source graph (Dynamo file trust is folder-based)
         // with a .relay_ prefix so ribbon sync never lists it as a graph.
         Assert.Equal(Path.GetDirectoryName(sourcePath), Path.GetDirectoryName(modifiedPath));
-        Assert.StartsWith(".relay_", Path.GetFileName(modifiedPath));
+        Assert.NotEqual(Path.TrimEndingDirectorySeparator(Path.GetTempPath()),
+                        Path.GetDirectoryName(modifiedPath));
+        Assert.StartsWith(DynamoInputParser.TempGraphPrefix, Path.GetFileName(modifiedPath));
 
         using var doc = JsonDocument.Parse(File.ReadAllText(modifiedPath));
         var nodes = doc.RootElement.GetProperty("Nodes")
@@ -416,16 +476,17 @@ public sealed class DynamoInputParserTests : IDisposable
     {
         var sourcePath = WriteGraph(SampleGraph);
 
-        var modifiedPath = DynamoInputParser.ApplyUserValues(sourcePath, new Dictionary<string, object>
+        var applied = DynamoInputParser.ApplyUserValues(sourcePath, new Dictionary<string, object>
         {
             ["id-string"] = "world",
             ["id-double-slider"] = 7.5,
             ["id-bool"] = false,
             ["id-categories"] = new DropdownValue { SelectedIndex = 12, SelectedString = "OST_Doors" }
         });
-        TrackTemp(modifiedPath);
+        TrackTemp(applied.Path);
+        Assert.True(applied.Succeeded);
 
-        using var doc = JsonDocument.Parse(File.ReadAllText(modifiedPath));
+        using var doc = JsonDocument.Parse(File.ReadAllText(applied.Path));
         var inputs = doc.RootElement.GetProperty("Inputs")
             .EnumerateArray()
             .ToDictionary(n => n.GetProperty("Id").GetString()!);
@@ -438,15 +499,123 @@ public sealed class DynamoInputParserTests : IDisposable
     }
 
     [Fact]
-    public void ApplyUserValuesOnMissingFileReturnsOriginalPath()
+    public void ApplyUserValuesOnMissingFileFailsInsteadOfRunningTheSourceGraph()
     {
         var missing = Path.Combine(Path.GetTempPath(), $"relay_missing_{Guid.NewGuid():N}.dyn");
 
-        var result = DynamoInputParser.ApplyUserValues(missing, new Dictionary<string, object>
+        var applied = DynamoInputParser.ApplyUserValues(missing, new Dictionary<string, object>
         {
             ["id"] = "value"
         });
 
-        Assert.Equal(missing, result);
+        // Returning the source path here would run the graph with its saved values and
+        // report success — the user's entries would vanish silently.
+        Assert.False(applied.Succeeded);
+        Assert.Null(applied.Path);
+        Assert.Contains(missing, applied.Failure);
+    }
+
+    [Fact]
+    public void ApplyUserValuesOnMalformedGraphFailsInsteadOfRunningTheSourceGraph()
+    {
+        var sourcePath = WriteGraph("{ not valid json");
+
+        var applied = DynamoInputParser.ApplyUserValues(sourcePath, new Dictionary<string, object>
+        {
+            ["id-string"] = "world"
+        });
+
+        Assert.False(applied.Succeeded);
+        Assert.Null(applied.Path);
+        Assert.False(string.IsNullOrWhiteSpace(applied.Failure));
+    }
+
+    [Fact]
+    public void ApplyUserValuesFallsBackToTempFolderWithATrustWarning()
+    {
+        var sourcePath = WriteGraph(SampleGraph);
+        var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
+
+        // A read-only shared graph library: writing beside the graph is refused, the
+        // system temp folder still works.
+        var writer = new StubGraphFileWriter(path =>
+            Path.GetDirectoryName(path) == sourceDirectory
+                ? new UnauthorizedAccessException("Access to the path is denied.")
+                : null);
+
+        var applied = DynamoInputParser.ApplyUserValues(
+            sourcePath,
+            new Dictionary<string, object> { ["id-string"] = "world" },
+            writer);
+
+        Assert.True(applied.Succeeded);
+        Assert.Equal(Path.TrimEndingDirectorySeparator(Path.GetTempPath()),
+                     Path.GetDirectoryName(applied.Path));
+
+        // The user must be told the copy left the trusted folder, because Dynamo may
+        // then refuse to evaluate it and the reason would otherwise be invisible.
+        Assert.Contains("trust", applied.Warning, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("world", writer.Written[applied.Path]);
+    }
+
+    [Fact]
+    public void ApplyUserValuesFailsWhenNoLocationIsWritable()
+    {
+        var sourcePath = WriteGraph(SampleGraph);
+        var writer = new StubGraphFileWriter(_ => new IOException("There is not enough space on the disk."));
+
+        var applied = DynamoInputParser.ApplyUserValues(
+            sourcePath,
+            new Dictionary<string, object> { ["id-string"] = "world" },
+            writer);
+
+        Assert.False(applied.Succeeded);
+        Assert.Null(applied.Path);
+        Assert.Contains("not enough space", applied.Failure);
+    }
+
+    [Fact]
+    public void ApplyUserValuesRemovesAPartiallyWrittenCopy()
+    {
+        var sourcePath = WriteGraph(SampleGraph);
+        var sourceDirectory = Path.GetDirectoryName(sourcePath)!;
+        var writer = new StubGraphFileWriter(path =>
+            Path.GetDirectoryName(path) == sourceDirectory
+                ? new IOException("The write was interrupted.")
+                : null);
+
+        var applied = DynamoInputParser.ApplyUserValues(
+            sourcePath,
+            new Dictionary<string, object> { ["id-string"] = "world" },
+            writer);
+
+        Assert.True(applied.Succeeded);
+        // The truncated file from the interrupted write must not be left in the graph
+        // folder, where it would linger as junk beside the user's graphs.
+        Assert.Single(writer.Deleted);
+        Assert.Equal(sourceDirectory, Path.GetDirectoryName(writer.Deleted[0]));
+    }
+
+    private sealed class StubGraphFileWriter : IGraphFileWriter
+    {
+        private readonly Func<string, Exception> _failFor;
+
+        internal StubGraphFileWriter(Func<string, Exception> failFor) => _failFor = failFor;
+
+        internal Dictionary<string, string> Written { get; } = new(StringComparer.Ordinal);
+        internal List<string> Deleted { get; } = new();
+
+        public void WriteAllText(string path, string contents)
+        {
+            var failure = _failFor(path);
+            if (failure != null) throw failure;
+            Written[path] = contents;
+        }
+
+        public void Delete(string path)
+        {
+            Deleted.Add(path);
+            Written.Remove(path);
+        }
     }
 }

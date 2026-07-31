@@ -86,7 +86,7 @@ internal sealed class TemporaryDynamoGraph : IDisposable
         {
             string sourceDirectory = System.IO.Path.GetDirectoryName(System.IO.Path.GetFullPath(sourcePath))
                 ?? throw new InvalidOperationException($"Graph '{sourcePath}' has no containing directory.");
-            return System.IO.Path.Combine(sourceDirectory, $".relay_{Guid.NewGuid():N}.dyn");
+            return System.IO.Path.Combine(sourceDirectory, $"{Relay.Utilities.DynamoInputParser.TempGraphPrefix}{Guid.NewGuid():N}.dyn");
         }
     }
 }

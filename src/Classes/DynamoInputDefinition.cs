@@ -145,6 +145,22 @@ namespace Relay.Classes
     }
 
     /// <summary>
+    /// Outcome of writing accepted input values to a temporary copy of a graph.
+    /// A failure must block execution: running the unmodified source graph would
+    /// silently evaluate with the values saved in the file instead of the ones the
+    /// user just entered.
+    /// </summary>
+    internal sealed record AppliedInputGraph(string Path, string Warning, string Failure)
+    {
+        internal bool Succeeded => Failure is null;
+
+        internal static AppliedInputGraph Success(string path, string warning = null) =>
+            new(path, warning, null);
+
+        internal static AppliedInputGraph Failed(string failure) => new(null, null, failure);
+    }
+
+    /// <summary>
     /// Represents all inputs extracted from a Dynamo graph
     /// </summary>
     internal class DynamoGraphInputs

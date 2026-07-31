@@ -21,6 +21,7 @@
     <Compile Include="..\..\src\Configuration\GraphDirectoryDiscovery.cs" Link="Configuration\GraphDirectoryDiscovery.cs" />
     <Compile Include="..\..\src\Classes\DynamoInputDefinition.cs" Link="Classes\DynamoInputDefinition.cs" />
     <Compile Include="..\..\src\Utilities\DynamoInputParser.cs" Link="Utilities\DynamoInputParser.cs" />
+    <Compile Include="..\..\src\Utilities\NumericInput.cs" Link="Utilities\NumericInput.cs" />
     <Compile Include="..\..\src\Execution\TemporaryDynamoGraph.cs" Link="Execution\TemporaryDynamoGraph.cs" />
     <Compile Include="..\..\src\Execution\DynamoExecutionContracts.cs" Link="Execution\DynamoExecutionContracts.cs" />
     <Compile Include="..\..\src\Execution\SynchronousDynamoEvaluator.cs" Link="Execution\SynchronousDynamoEvaluator.cs" />

@@ -33,6 +33,7 @@ internal static class DynamoMethods
 
         string graphToRun = dynamoJournal;
         string modifiedGraphPath = null;
+        string inputWarning = null;
 
         if (graphInputs.HasInputs)
         {
@@ -43,8 +44,18 @@ internal static class DynamoMethods
             // Apply the accepted values to a disposable copy beside the source graph
             // (same folder preserves Dynamo's folder-based file trust); the source
             // graph is never touched.
-            modifiedGraphPath = DynamoInputParser.ApplyUserValues(dynamoJournal, userValues);
+            var applied = DynamoInputParser.ApplyUserValues(dynamoJournal, userValues);
+            if (!applied.Succeeded)
+            {
+                // Running the unmodified graph here would evaluate with its saved values
+                // and report success, changing the model behind the user's back.
+                diagnostic = applied.Failure;
+                return Result.Failed;
+            }
+
+            modifiedGraphPath = applied.Path;
             graphToRun = modifiedGraphPath;
+            inputWarning = applied.Warning;
         }
 
         DynamoExecutionOutcome outcome;
@@ -79,7 +90,10 @@ internal static class DynamoMethods
             }
         }
 
-        diagnostic = JoinDiagnostics(outcome.Diagnostic, sessionCleanupFailure);
+        // The trust warning only reaches the user when the run also fails, which is the
+        // case where it explains why: Dynamo refused to evaluate a copy it does not trust.
+        diagnostic = JoinDiagnostics(outcome.Diagnostic, inputWarning, sessionCleanupFailure);
+        if (!string.IsNullOrWhiteSpace(inputWarning)) System.Diagnostics.Trace.WriteLine($"[Relay] {inputWarning}");
         if (!string.IsNullOrWhiteSpace(sessionCleanupFailure)) System.Diagnostics.Trace.WriteLine($"[Relay] {sessionCleanupFailure}");
         if (outcome.Cancelled) return Result.Cancelled;
         return outcome.Succeeded ? Result.Succeeded : Result.Failed;

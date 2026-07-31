@@ -6,6 +6,16 @@ using Relay.Classes;
 namespace Relay.Utilities
 {
     /// <summary>
+    /// Write seam for the temporary run copy, so the read-only-graph-folder fallback can
+    /// be tested without depending on file-system permissions.
+    /// </summary>
+    internal interface IGraphFileWriter
+    {
+        void WriteAllText(string path, string contents);
+        void Delete(string path);
+    }
+
+    /// <summary>
     /// Parses Dynamo .dyn graph files to extract input node definitions,
     /// and applies user-provided values back to a modified copy of the graph.
     /// This class is pure JSON processing — no Revit or Dynamo API dependencies —
@@ -18,6 +28,13 @@ namespace Relay.Utilities
         /// UniqueIds themselves never contain a comma, so this is safe.
         /// </summary>
         internal const string SelectionIdSeparator = ",";
+
+        /// <summary>
+        /// File-name prefix for Relay's temporary run copies. Graph discovery skips these
+        /// (see <see cref="RibbonUtils.IsTemporaryGraph"/>) so a copy left behind by a
+        /// crashed run can never appear as a ribbon button.
+        /// </summary>
+        internal const string TempGraphPrefix = ".relay_";
 
         /// <summary>
         /// Reads a .dyn file and returns all nodes marked as IsSetAsInput.
@@ -65,6 +82,11 @@ namespace Relay.Utilities
                             ? idProp.GetString()
                             : null;
                         if (id == null) continue;
+
+                        // A hand-merged .dyn can list the same node view twice. Rendering
+                        // two rows for one node would silently discard whatever the user
+                        // typed into the first of them.
+                        if (inputNodeIds.Contains(id, StringComparer.Ordinal)) continue;
 
                         inputNodeIds.Add(id);
 
@@ -182,14 +204,21 @@ namespace Relay.Utilities
         }
 
         /// <summary>
-        /// Applies user-provided values to a copy of the graph and returns the path of the
-        /// new temporary file. The caller is responsible for deleting the temp file.
-        /// The source graph file is never modified.
+        /// Applies user-provided values to a copy of the graph. The caller is responsible
+        /// for deleting the temporary file. The source graph file is never modified.
         /// </summary>
+        /// <remarks>
+        /// Never falls back to returning the source path: running the unmodified graph
+        /// would silently evaluate with the values saved in the file rather than the ones
+        /// the user just entered, and report success while changing the model incorrectly.
+        /// </remarks>
         /// <param name="graphPath">Original .dyn file path.</param>
         /// <param name="userValues">Mapping from node ID to new value.</param>
-        /// <returns>Path to the modified temporary .dyn file.</returns>
-        public static string ApplyUserValues(string graphPath, Dictionary<string, object> userValues)
+        /// <param name="writer">Write seam; defaults to the physical file system.</param>
+        public static AppliedInputGraph ApplyUserValues(
+            string graphPath,
+            Dictionary<string, object> userValues,
+            IGraphFileWriter writer = null)
         {
             try
             {
@@ -197,7 +226,8 @@ namespace Relay.Utilities
                 var root = JsonNode.Parse(json);
 
                 if (root == null)
-                    return graphPath;
+                    return AppliedInputGraph.Failed(
+                        $"Relay could not apply the values you entered: the graph '{graphPath}' is empty. The graph was not run.");
 
                 // Update InputValue in the Nodes array
                 var nodes = root["Nodes"]?.AsArray();
@@ -235,12 +265,13 @@ namespace Relay.Utilities
                     }
                 }
 
-                return WriteTemporaryGraph(graphPath, root.ToJsonString());
+                return WriteTemporaryGraph(graphPath, root.ToJsonString(), writer ?? PhysicalGraphFileWriter.Instance);
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.WriteLine($"[Relay] Failed to apply user values to graph: {ex.Message}");
-                return graphPath;
+                return AppliedInputGraph.Failed(
+                    $"Relay could not apply the values you entered to '{graphPath}': {ex.Message}. The graph was not run, so the model is unchanged.");
             }
         }
 
@@ -248,13 +279,13 @@ namespace Relay.Utilities
         /// Writes the modified graph JSON to a temporary <c>.relay_*.dyn</c> file beside the
         /// source graph — Dynamo's file trust is folder-based, so a copy in %TEMP% can be
         /// silently blocked from running (<c>RunSettings.ForceBlockRun</c>).  Falls back to
-        /// the system temp folder when the source folder is not writable, and to the source
-        /// path itself (values dropped) as a last resort.
+        /// the system temp folder with a warning when the source folder is not writable.
         /// </summary>
-        private static string WriteTemporaryGraph(string graphPath, string json)
+        private static AppliedInputGraph WriteTemporaryGraph(string graphPath, string json, IGraphFileWriter writer)
         {
-            var fileName = $".relay_{Guid.NewGuid():N}.dyn";
+            var fileName = $"{TempGraphPrefix}{Guid.NewGuid():N}.dyn";
             var candidates = new List<string>();
+            var failures = new List<string>();
 
             try
             {
@@ -264,25 +295,49 @@ namespace Relay.Utilities
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Trace.WriteLine($"[Relay] Could not resolve the graph directory for '{graphPath}': {ex.Message}");
+                failures.Add($"could not resolve the graph directory ({ex.Message})");
             }
 
-            candidates.Add(Path.Combine(Path.GetTempPath(), fileName));
+            var fallbackPath = Path.Combine(Path.GetTempPath(), fileName);
+            candidates.Add(fallbackPath);
 
             foreach (var candidate in candidates)
             {
                 try
                 {
-                    File.WriteAllText(candidate, json, System.Text.Encoding.UTF8);
-                    return candidate;
+                    writer.WriteAllText(candidate, json);
                 }
                 catch (Exception ex)
                 {
-                    System.Diagnostics.Trace.WriteLine($"[Relay] Could not write temporary graph '{candidate}': {ex.Message}");
+                    failures.Add($"'{candidate}' ({ex.Message})");
+                    // A write that failed part-way leaves a truncated file behind
+                    try { writer.Delete(candidate); } catch { }
+                    continue;
                 }
+
+                // Dynamo trusts graphs by folder. A copy outside the source folder may be
+                // blocked from evaluating, so tell the user where the run copy went.
+                var warning = string.Equals(candidate, fallbackPath, StringComparison.OrdinalIgnoreCase) && candidates.Count > 1
+                    ? $"Relay could not write next to the graph ({string.Join("; ", failures)}), so the run copy was placed in '{Path.GetTempPath()}'. "
+                      + "Dynamo trusts graphs by folder, so it may refuse to evaluate from there — make the graph folder writable, or add the temp folder to Dynamo's trusted locations."
+                    : null;
+
+                return AppliedInputGraph.Success(candidate, warning);
             }
 
-            return graphPath;
+            return AppliedInputGraph.Failed(
+                $"Relay could not write a temporary copy of '{graphPath}' to apply the values you entered: {string.Join("; ", failures)}. "
+                + "The graph was not run, so the model is unchanged.");
+        }
+
+        private sealed class PhysicalGraphFileWriter : IGraphFileWriter
+        {
+            internal static readonly PhysicalGraphFileWriter Instance = new();
+
+            public void WriteAllText(string path, string contents) =>
+                File.WriteAllText(path, contents, System.Text.Encoding.UTF8);
+
+            public void Delete(string path) => File.Delete(path);
         }
 
         // -----------------------------------------------------------------------

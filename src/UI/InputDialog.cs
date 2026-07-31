@@ -1,10 +1,10 @@
-using System.Globalization;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Markup;
 using System.Windows.Media;
 using Relay.Classes;
+using Relay.Utilities;
 
 namespace Relay.UI
 {
@@ -961,8 +961,8 @@ namespace Relay.UI
             if (definition.MinValue.HasValue && value < definition.MinValue.Value ||
                 definition.MaxValue.HasValue && value > definition.MaxValue.Value)
             {
-                var min = definition.MinValue?.ToString(CultureInfo.InvariantCulture) ?? "-∞";
-                var max = definition.MaxValue?.ToString(CultureInfo.InvariantCulture) ?? "∞";
+                var min = definition.MinValue?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-∞";
+                var max = definition.MaxValue?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "∞";
                 return $"Enter a value between {min} and {max}.";
             }
             return null;
@@ -1008,28 +1008,12 @@ namespace Relay.UI
         // Utility helpers
         // -----------------------------------------------------------------------
 
-        private static bool TryParseDouble(string text, out double value)
-        {
-            // Accept both invariant ("3.5") and current-culture ("3,5") formats
-            return double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out value) ||
-                   double.TryParse(text, NumberStyles.Any, CultureInfo.CurrentCulture, out value);
-        }
+        private static bool TryParseDouble(string text, out double value) =>
+            NumericInput.TryParseUserNumber(text, out value);
 
-        private static double ConvertToDouble(object value)
-        {
-            if (value is double d) return d;
-            if (value is int i) return i;
-            if (value is float f) return f;
-            double.TryParse(value?.ToString() ?? "0",
-                NumberStyles.Any, CultureInfo.InvariantCulture, out var result);
-            return result;
-        }
+        private static double ConvertToDouble(object value) => NumericInput.FromGraphValue(value);
 
-        private static string FormatNumber(double value, bool isInteger)
-        {
-            return isInteger
-                ? ((int)Math.Round(value)).ToString(CultureInfo.InvariantCulture)
-                : Math.Round(value, 3).ToString("0.###", CultureInfo.InvariantCulture);
-        }
+        private static string FormatNumber(double value, bool isInteger) =>
+            NumericInput.Format(value, isInteger);
     }
 }
