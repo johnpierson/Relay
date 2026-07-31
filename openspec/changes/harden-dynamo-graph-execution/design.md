@@ -6,7 +6,7 @@
 
 **Goals:**
 
-- Preserve source graphs while preparing a structurally valid automatic-run copy.
+- Preserve source graphs and their run settings; create a structural copy only for staged binding.
 - Validate the Dynamo adapter before invocation and report incompatibility clearly.
 - Provide prepare, load, bind, and evaluate stages without evaluating during graph load.
 - Define model reuse across documents and guarantee cleanup.
@@ -18,8 +18,8 @@
 
 ## Decisions
 
-1. Parse the `.dyn` document with `JsonNode`/`JsonDocument` semantics and update only the top-level `RunType`, writing a new temporary file. Literal replacement is rejected because formatting or a missing comma changes behavior silently.
-2. Define an `IDynamoRunner` that creates an `IDynamoExecutionSession` through one adapter per materially different DynamoRevit surface. The session exposes validated load, bind, and evaluate stages; graph load MUST remain paused until the caller explicitly evaluates it. Direct graph execution passes an empty binding set through the same path.
+1. Run empty-binding commands from the selected `.dyn` path without rewriting it. When binding requires a mutable copy, parse and write that copy with `JsonNode`/`JsonDocument` semantics while preserving its top-level `RunType`. Literal replacement and forced `Automatic` mode are rejected because they can silently change execution count.
+2. Define an `IDynamoRunner` with two paths through one adapter per materially different DynamoRevit surface. Empty bindings load UI-less and paused, temporarily set the public Dynamo scheduler `ProcessMode` to `Synchronous`, reset and attach a fresh engine without dirtying nodes, mark every loaded node for forced execution, call the workspace `Run()` method exactly once inside the active Revit API context, and restore the prior scheduler mode. Supplied bindings create an `IDynamoExecutionSession` whose validated load, bind, and evaluate stages keep graph load paused until the caller explicitly evaluates it.
 3. Keep typed binding contracts version-neutral and keyed by Dynamo node GUID. The hardening layer does not discover inputs or interpret UI values; it validates that each supplied binding targets the expected runtime node and delegates version-specific mutation to the adapter.
 4. Isolate reflection where public compile-time APIs cannot span versions. Each adapter validates assembly identity, required types, execution members, input-binding members, and compatible signatures before the relevant stage.
 5. Return typed preparation, load, binding, invocation, cancellation, and cleanup outcomes that map to a Revit `Result` and detailed diagnostic. Unexpected exceptions retain stack/context and are not converted to success.
@@ -29,14 +29,15 @@
 ## Risks / Trade-offs
 
 - [Reflected Dynamo surface changes] -> Keep adapters small, validate eagerly, and host-test each supported matrix entry.
-- [A loaded graph evaluates before bindings are applied] -> Configure and verify paused load in every adapter, and expose evaluation as an explicit one-shot operation.
+- [A loaded graph evaluates before bindings are applied] -> Force manual paused load for direct execution and every staged binding session.
+- [A queued Revit evaluation never reaches the idle scheduler] -> Process the one direct evaluation synchronously, without enabling Dynamo automation/test mode, and restore the scheduler mode afterward.
 - [Partially applied bindings leave ambiguous state] -> Prevent evaluation after any binding failure and dispose the entire execution session.
 - [JSON serialization changes formatting] -> Operate only on the temporary copy and verify semantic preservation in tests.
 - [Model shutdown policy loses performance] -> Prefer correctness across documents; measure before introducing reuse optimization.
 
 ## Migration Plan
 
-Introduce the staged runner and session boundary behind the existing `RunGraph` entry point, pass an empty binding set for current callers, then migrate one supported version at a time. The later dynamic-input change can supply typed bindings without replacing the lifecycle contract. Rollback can restore the prior runner without changing graph files or settings.
+Introduce direct and staged runner boundaries behind the existing `RunGraph` entry point, pass an empty binding set for current callers, then migrate one supported version at a time. The later dynamic-input change can prepare a temporary copy and supply typed bindings without replacing the lifecycle contract. Rollback can restore the prior runner without changing graph files or settings.
 
 ## Open Questions
 

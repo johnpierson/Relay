@@ -8,12 +8,12 @@ Graph preparation, Dynamo discovery, reflective API binding, model lifecycle pol
 
 ## Scope
 
-- Parse and update the graph run mode structurally without modifying the source graph.
+- Preserve the selected graph byte-for-byte for direct runs and prepare binding copies structurally without changing their run mode.
 - Validate DynamoRevit assembly, types, properties, and methods before invocation.
 - Provide a staged execution session that can load a graph without evaluation, accept validated typed bindings, and evaluate only after binding succeeds.
 - Define Dynamo model reuse and shutdown behavior across active Revit documents.
 - Convert preparation and invocation failures into explicit Relay command results and diagnostics.
-- Always clean up temporary graph files.
+- Clean up every temporary graph file created for staged binding.
 
 ## Non-goals
 
@@ -24,7 +24,7 @@ Graph preparation, Dynamo discovery, reflective API binding, model lifecycle pol
 ## What Changes
 
 - Extract graph preparation and reflective binding behind testable components.
-- Split graph execution into validated prepare, load, bind, and evaluate stages while preserving direct execution with an empty binding set.
+- Use DynamoRevit's supported one-shot UI-less command for empty bindings and validated prepare, load, bind, and evaluate stages when bindings are supplied.
 - Fail clearly when DynamoRevit is unavailable or incompatible.
 - Track document/model lifecycle only after a successful execution transition.
 - Add version-focused tests and host verification for Revit 2025-2027.

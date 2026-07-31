@@ -235,15 +235,54 @@ namespace Relay.Utilities
                     }
                 }
 
-                var tempPath = Path.Combine(Path.GetTempPath(), $"relay_modified_{Guid.NewGuid()}.dyn");
-                File.WriteAllText(tempPath, root.ToJsonString(), System.Text.Encoding.UTF8);
-                return tempPath;
+                return WriteTemporaryGraph(graphPath, root.ToJsonString());
             }
             catch (Exception ex)
             {
                 System.Diagnostics.Trace.WriteLine($"[Relay] Failed to apply user values to graph: {ex.Message}");
                 return graphPath;
             }
+        }
+
+        /// <summary>
+        /// Writes the modified graph JSON to a temporary <c>.relay_*.dyn</c> file beside the
+        /// source graph — Dynamo's file trust is folder-based, so a copy in %TEMP% can be
+        /// silently blocked from running (<c>RunSettings.ForceBlockRun</c>).  Falls back to
+        /// the system temp folder when the source folder is not writable, and to the source
+        /// path itself (values dropped) as a last resort.
+        /// </summary>
+        private static string WriteTemporaryGraph(string graphPath, string json)
+        {
+            var fileName = $".relay_{Guid.NewGuid():N}.dyn";
+            var candidates = new List<string>();
+
+            try
+            {
+                var sourceDirectory = Path.GetDirectoryName(Path.GetFullPath(graphPath));
+                if (!string.IsNullOrEmpty(sourceDirectory))
+                    candidates.Add(Path.Combine(sourceDirectory, fileName));
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Trace.WriteLine($"[Relay] Could not resolve the graph directory for '{graphPath}': {ex.Message}");
+            }
+
+            candidates.Add(Path.Combine(Path.GetTempPath(), fileName));
+
+            foreach (var candidate in candidates)
+            {
+                try
+                {
+                    File.WriteAllText(candidate, json, System.Text.Encoding.UTF8);
+                    return candidate;
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Trace.WriteLine($"[Relay] Could not write temporary graph '{candidate}': {ex.Message}");
+                }
+            }
+
+            return graphPath;
         }
 
         // -----------------------------------------------------------------------

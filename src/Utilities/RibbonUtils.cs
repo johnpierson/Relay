@@ -375,6 +375,11 @@ namespace Relay.Utilities
                     {
                         FileInfo fInfo = new FileInfo(file);
 
+                        // Skip Relay's own temporary input copies (.relay_*.dyn) so a
+                        // crashed run can never surface them as ribbon buttons.
+                        if (fInfo.Name.StartsWith(".relay_", StringComparison.OrdinalIgnoreCase))
+                            continue;
+
                         var dynPath = fInfo.FullName;
 
                         if (!Globals.RelayButtons.ContainsKey(dynPath))

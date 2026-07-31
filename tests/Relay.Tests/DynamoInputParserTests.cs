@@ -382,6 +382,11 @@ public sealed class DynamoInputParserTests : IDisposable
         Assert.NotEqual(sourcePath, modifiedPath);
         Assert.Equal(sourceBytes, File.ReadAllBytes(sourcePath)); // source untouched
 
+        // The copy lives beside the source graph (Dynamo file trust is folder-based)
+        // with a .relay_ prefix so ribbon sync never lists it as a graph.
+        Assert.Equal(Path.GetDirectoryName(sourcePath), Path.GetDirectoryName(modifiedPath));
+        Assert.StartsWith(".relay_", Path.GetFileName(modifiedPath));
+
         using var doc = JsonDocument.Parse(File.ReadAllText(modifiedPath));
         var nodes = doc.RootElement.GetProperty("Nodes")
             .EnumerateArray()
