@@ -19,5 +19,7 @@
   <ItemGroup>
     <Compile Include="..\..\src\Configuration\GraphRootResolver.cs" Link="Configuration\GraphRootResolver.cs" />
     <Compile Include="..\..\src\Configuration\GraphDirectoryDiscovery.cs" Link="Configuration\GraphDirectoryDiscovery.cs" />
+    <Compile Include="..\..\src\Classes\DynamoInputDefinition.cs" Link="Classes\DynamoInputDefinition.cs" />
+    <Compile Include="..\..\src\Utilities\DynamoInputParser.cs" Link="Utilities\DynamoInputParser.cs" />
   </ItemGroup>
 </Project>
