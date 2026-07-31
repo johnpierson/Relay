@@ -1,0 +1,357 @@
+{
+  "Uuid": "53430aa6-36ac-4026-98c0-df046520c407",
+  "IsCustomNode": false,
+  "Description": "",
+  "Name": "Inputs",
+  "ElementResolver": {
+    "ResolutionMap": {}
+  },
+  "Inputs": [
+    {
+      "Id": "710683a6adf1492ab43d68f361e3fc02",
+      "Name": "Categories",
+      "Type": "selection",
+      "Type2": "dropdownSelection",
+      "Value": "",
+      "Description": "All built-in categories.",
+      "SelectedIndex": -1
+    }
+  ],
+  "Outputs": [
+    {
+      "Id": "af93f2503aab4d38b2b9147e1b4ae40d",
+      "Name": "Watch",
+      "Type": "string",
+      "InitialValue": "null",
+      "Description": "Visualizes a node's output"
+    },
+    {
+      "Id": "8d867cdfbd3c486ea0c7eb8c7186523a",
+      "Name": "Watch",
+      "Type": "unknown",
+      "InitialValue": "",
+      "Description": "Visualizes a node's output"
+    }
+  ],
+  "Nodes": [
+    {
+      "ConcreteType": "DSRevitNodesUI.Categories, DSRevitNodesUI",
+      "SelectedIndex": -1,
+      "SelectedString": "",
+      "Id": "710683a6adf1492ab43d68f361e3fc02",
+      "NodeType": "ExtensionNode",
+      "Inputs": [],
+      "Outputs": [
+        {
+          "Id": "196c72f3ec2840718a1c65a420e676d0",
+          "Name": "Category",
+          "Description": "The selected Category.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "All built-in categories."
+    },
+    {
+      "ConcreteType": "DSRevitNodesUI.ElementsOfCategory, DSRevitNodesUI",
+      "Id": "38b39eeeac6e4dd69ea1e919024fdb7c",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "a0cd9f6563ce4cc4aa5956f0e1d50983",
+          "Name": "Category",
+          "Description": "The Category",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "8013c3a065ce4e5796fbb6e3d709fc42",
+          "Name": "Elements",
+          "Description": "An element class.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Get all elements of the specified category from the model."
+    },
+    {
+      "ConcreteType": "Dynamo.Graph.Nodes.ZeroTouch.DSFunction, DynamoCore",
+      "Id": "c2dadaf66b6f4285bd123bb9b8a08012",
+      "NodeType": "FunctionNode",
+      "Inputs": [
+        {
+          "Id": "b903f97bb6c24d7689a1b334f3d451cc",
+          "Name": "list",
+          "Description": "List to get the item count of.\n\nvar[]..[]",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "88c763a37f8d429ab7c081be005adedc",
+          "Name": "int",
+          "Description": "List length.",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "FunctionSignature": "DSCore.List.Count@var[]..[]",
+      "Replication": "Auto",
+      "Description": "Returns the number of items stored in the given list.\n\nList.Count (list: var[]..[]): int"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.FromObject, CoreNodeModels",
+      "Id": "e86e0e2a0d814f9bb88054423853a13a",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "afca8109b0904b12987e77b0d03714db",
+          "Name": "object",
+          "Description": "Object to be serialized",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "6638b091e4064d52a5988ba32bd6bb2b",
+          "Name": "string",
+          "Description": "String representation of the object",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Converts an object to a string representation"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "WatchWidth": 49.6,
+      "WatchHeight": 40.0,
+      "Id": "af93f2503aab4d38b2b9147e1b4ae40d",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "edba171b4f684e6fb8894854d34e5574",
+          "Name": "",
+          "Description": "Node to show output from",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "a94175c046d7434385e44f1e9a06ea5e",
+          "Name": "",
+          "Description": "Node output",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualizes a node's output"
+    },
+    {
+      "ConcreteType": "CoreNodeModels.Watch, CoreNodeModels",
+      "WatchWidth": 49.6,
+      "WatchHeight": 200.0,
+      "Id": "8d867cdfbd3c486ea0c7eb8c7186523a",
+      "NodeType": "ExtensionNode",
+      "Inputs": [
+        {
+          "Id": "0db9e19225da4f19adb7f903638422bf",
+          "Name": "",
+          "Description": "Node to show output from",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Outputs": [
+        {
+          "Id": "2cafaedc800b434981f50bed93b51259",
+          "Name": "",
+          "Description": "Node output",
+          "UsingDefaultValue": false,
+          "Level": 2,
+          "UseLevels": false,
+          "KeepListStructure": false
+        }
+      ],
+      "Replication": "Disabled",
+      "Description": "Visualizes a node's output"
+    }
+  ],
+  "Connectors": [
+    {
+      "Start": "196c72f3ec2840718a1c65a420e676d0",
+      "End": "a0cd9f6563ce4cc4aa5956f0e1d50983",
+      "Id": "715c165baf2a46d8a62eb5390e8c7e80",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "8013c3a065ce4e5796fbb6e3d709fc42",
+      "End": "b903f97bb6c24d7689a1b334f3d451cc",
+      "Id": "39aa9a136b374d51956309de5ba7898d",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "8013c3a065ce4e5796fbb6e3d709fc42",
+      "End": "0db9e19225da4f19adb7f903638422bf",
+      "Id": "02b373ace0e4483ab7bfcac16fa57f00",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "88c763a37f8d429ab7c081be005adedc",
+      "End": "afca8109b0904b12987e77b0d03714db",
+      "Id": "2de97d7ea1cd492eaa4867e488d38d0a",
+      "IsHidden": "False"
+    },
+    {
+      "Start": "6638b091e4064d52a5988ba32bd6bb2b",
+      "End": "edba171b4f684e6fb8894854d34e5574",
+      "Id": "5c475b01f22147319c6a229eb7fc27a9",
+      "IsHidden": "False"
+    }
+  ],
+  "Dependencies": [],
+  "NodeLibraryDependencies": [],
+  "EnableLegacyPolyCurveBehavior": false,
+  "Thumbnail": "",
+  "GraphDocumentationURL": null,
+  "ExtensionWorkspaceData": [
+    {
+      "ExtensionGuid": "28992e1d-abb9-417f-8b1b-05e053bee670",
+      "Name": "Properties",
+      "Version": "4.0",
+      "Data": {}
+    },
+    {
+      "ExtensionGuid": "DFBD9CC0-DB40-457A-939E-8C8555555A9D",
+      "Name": "Generative Design",
+      "Version": "10.3",
+      "Data": {}
+    }
+  ],
+  "Author": "",
+  "Linting": {
+    "activeLinter": "None",
+    "activeLinterId": "7b75fb44-43fd-4631-a878-29f4d5d8399a",
+    "warningCount": 0,
+    "errorCount": 0
+  },
+  "Bindings": [],
+  "View": {
+    "Dynamo": {
+      "ScaleFactor": 1.0,
+      "HasRunWithoutCrash": true,
+      "IsVisibleInDynamoLibrary": true,
+      "Version": "4.0.2.3852",
+      "RunType": "Automatic",
+      "RunPeriod": "1000"
+    },
+    "Camera": {
+      "Name": "_Background Preview",
+      "EyeX": -17.0,
+      "EyeY": 24.0,
+      "EyeZ": 50.0,
+      "LookX": 12.0,
+      "LookY": -13.0,
+      "LookZ": -58.0,
+      "UpX": 0.0,
+      "UpY": 1.0,
+      "UpZ": 0.0
+    },
+    "ConnectorPins": [],
+    "NodeViews": [
+      {
+        "Id": "710683a6adf1492ab43d68f361e3fc02",
+        "Name": "Categories",
+        "IsSetAsInput": true,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 384.00000000000006,
+        "Y": 284.80000000000007
+      },
+      {
+        "Id": "38b39eeeac6e4dd69ea1e919024fdb7c",
+        "Name": "All Elements of Category",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 720.0,
+        "Y": 284.80000000000007
+      },
+      {
+        "Id": "c2dadaf66b6f4285bd123bb9b8a08012",
+        "Name": "List.Count",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1073.6,
+        "Y": 290.4000000000001
+      },
+      {
+        "Id": "e86e0e2a0d814f9bb88054423853a13a",
+        "Name": "String from Object",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": false,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1353.6000000000001,
+        "Y": 294.4
+      },
+      {
+        "Id": "af93f2503aab4d38b2b9147e1b4ae40d",
+        "Name": "Watch",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1672.8000000000002,
+        "Y": 302.4
+      },
+      {
+        "Id": "8d867cdfbd3c486ea0c7eb8c7186523a",
+        "Name": "Watch",
+        "IsSetAsInput": false,
+        "IsSetAsOutput": true,
+        "Excluded": false,
+        "ShowGeometry": true,
+        "X": 1684.0000000000002,
+        "Y": 451.20000000000005
+      }
+    ],
+    "Annotations": [],
+    "X": -236.00000000000028,
+    "Y": -10.399999999999977,
+    "Zoom": 1.0
+  }
+}
