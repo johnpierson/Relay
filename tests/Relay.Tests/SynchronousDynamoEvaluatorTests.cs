@@ -71,6 +71,64 @@ public sealed class SynchronousDynamoEvaluatorTests
         Assert.Contains("MarkNodeAsModified", outcome.Diagnostic);
     }
 
+    [Fact]
+    public void GraphIsOpenedPausedWhileTheSchedulerIsSynchronous()
+    {
+        var model = new FakeModel();
+
+        DynamoExecutionOutcome outcome = SynchronousDynamoEvaluator.Evaluate(model, "test", @"C:\graphs\a.dyn");
+
+        Assert.True(outcome.Succeeded);
+        Assert.Equal(@"C:\graphs\a.dyn", model.OpenedPath);
+        // Paused: Relay runs the graph itself once the engine is attached.
+        Assert.True(model.OpenedForceManual);
+        // Under the asynchronous scheduler the open is queued for Revit's Idling loop,
+        // which never runs while the command holds the UI thread.
+        Assert.Equal(FakeProcessMode.Synchronous, model.ModeObservedDuringOpen);
+        Assert.Equal(1, model.CurrentWorkspace.RunCount);
+        Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
+    }
+
+    [Fact]
+    public void EmptyWorkspaceAfterOpenIsReportedAsAFailedLoad()
+    {
+        // The Revit 2027 failure: DynamoRevit ignored the dynPath journal key, so the
+        // model sat on an empty workspace and "evaluated" nothing.
+        var model = new FakeModel { OpenLeavesWorkspaceEmpty = true };
+
+        DynamoExecutionOutcome outcome = SynchronousDynamoEvaluator.Evaluate(model, "test", @"C:\graphs\a.dyn");
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal(DynamoExecutionStage.Load, outcome.Stage);
+        Assert.Contains("contains no nodes", outcome.Diagnostic);
+        Assert.Contains(@"C:\graphs\a.dyn", outcome.Diagnostic);
+        Assert.Equal(0, model.CurrentWorkspace.RunCount);
+        Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
+    }
+
+    [Fact]
+    public void OpenFailureRestoresSchedulerModeAndReportsTheLoadStage()
+    {
+        var model = new FakeModel { OpenException = new IOException("the file is locked") };
+
+        DynamoExecutionOutcome outcome = SynchronousDynamoEvaluator.Evaluate(model, "test", @"C:\graphs\a.dyn");
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal(DynamoExecutionStage.Load, outcome.Stage);
+        Assert.Contains("the file is locked", outcome.Diagnostic);
+        Assert.Equal(FakeProcessMode.Asynchronous, model.Scheduler.ProcessMode);
+    }
+
+    [Fact]
+    public void MissingOpenFileSurfaceReportsCompatibilityFailure()
+    {
+        var outcome = SynchronousDynamoEvaluator.Evaluate(new ModelWithIncompatibleNode(), "test", @"C:\graphs\a.dyn");
+
+        Assert.False(outcome.Succeeded);
+        Assert.Equal(DynamoExecutionStage.Compatibility, outcome.Stage);
+        Assert.Contains("OpenFileFromPath", outcome.Diagnostic);
+    }
+
     private enum FakeProcessMode
     {
         Synchronous,
@@ -112,7 +170,7 @@ public sealed class SynchronousDynamoEvaluatorTests
         public object EngineController { get; internal set; }
         internal bool IsEvaluationPending => false;
         public FakeRunSettings RunSettings { get; } = new();
-        public FakeNode[] Nodes { get; } = new[] { new FakeNode(), new FakeNode() };
+        public FakeNode[] Nodes { get; internal set; } = new[] { new FakeNode(), new FakeNode() };
         internal int RunCount { get; private set; }
 
         public void Run()
@@ -135,6 +193,21 @@ public sealed class SynchronousDynamoEvaluatorTests
         internal FakeProcessMode? ModeObservedDuringRun { get; set; }
         internal Exception RunException { get; init; }
         internal bool SkipEvaluation { get; init; }
+
+        internal Exception OpenException { get; init; }
+        internal bool OpenLeavesWorkspaceEmpty { get; init; }
+        internal string OpenedPath { get; private set; }
+        internal bool OpenedForceManual { get; private set; }
+        internal FakeProcessMode? ModeObservedDuringOpen { get; private set; }
+
+        public void OpenFileFromPath(string filePath, bool forceManualExecutionMode)
+        {
+            OpenedPath = filePath;
+            OpenedForceManual = forceManualExecutionMode;
+            ModeObservedDuringOpen = Scheduler.ProcessMode;
+            if (OpenException is not null) throw OpenException;
+            if (OpenLeavesWorkspaceEmpty) CurrentWorkspace.Nodes = Array.Empty<FakeNode>();
+        }
 
         public void ResetEngine(bool markNodesAsDirty)
         {

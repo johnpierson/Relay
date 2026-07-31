@@ -86,6 +86,9 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             // Automation mode starts Dynamo in its internal test mode. Start the
             // normal UI-less model; the evaluator controls only one scheduler run.
             [JournalKeys.AutomationModeKey] = false.ToString(),
+            // Kept because DynamoRevit reads this key directly when it takes its
+            // open-the-workspace branch, but the load Relay depends on is the explicit
+            // one in the evaluator — this key alone left the workspace empty on 2027.
             ["dynPath"] = graphPath,
             [JournalKeys.DynPathExecuteKey] = false.ToString(),
             // Load paused, then run once while the public Dynamo scheduler is
@@ -93,10 +96,12 @@ internal sealed class ReflectionDynamoRunner : IDynamoRunner
             [JournalKeys.ForceManualRunKey] = true.ToString(),
             [JournalKeys.ModelShutDownKey] = shutdownExistingModel.ToString()
         };
-        object dynamo = InvokeCommand(journal, "loading the graph for one UI-less evaluation");
+        object dynamo = InvokeCommand(journal, "starting the UI-less Dynamo model");
         object model = members.ModelProperty.GetValue(dynamo)
             ?? throw new InvalidOperationException($"The {adapterName} adapter returned no RevitDynamoModel after graph load.");
-        return SynchronousDynamoEvaluator.Evaluate(model, adapterName);
+        // The graph is opened by the evaluator rather than left to the dynPath journal
+        // key, which DynamoRevit only honors on some of its internal branches.
+        return SynchronousDynamoEvaluator.Evaluate(model, adapterName, graphPath);
     }
 
     private object InvokeCommand(IDictionary<string, string> journal, string operation)

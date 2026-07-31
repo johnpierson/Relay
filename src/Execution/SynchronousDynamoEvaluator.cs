@@ -5,7 +5,20 @@ namespace Relay.Execution;
 
 internal static class SynchronousDynamoEvaluator
 {
-    internal static DynamoExecutionOutcome Evaluate(object model, string adapterName)
+    /// <summary>
+    /// Opens <paramref name="graphPath"/> and evaluates it exactly once, with Dynamo's
+    /// scheduler held in synchronous mode so the whole sequence completes inside the
+    /// calling Revit API context.
+    /// </summary>
+    /// <remarks>
+    /// The graph is opened here rather than through DynamoRevit's <c>dynPath</c> journal
+    /// key. That key is only honored on some of <c>ExecuteCommand</c>'s internal branches,
+    /// and on Revit 2027 it left the model sitting on an empty workspace — evaluation then
+    /// "succeeded" against zero nodes. Opening explicitly also guarantees that a model
+    /// reused from an earlier run evaluates the graph the user just clicked rather than
+    /// the previous one.
+    /// </remarks>
+    internal static DynamoExecutionOutcome Evaluate(object model, string adapterName, string graphPath = null)
     {
         ArgumentNullException.ThrowIfNull(model);
         object scheduler = model.GetType().GetProperty("Scheduler")?.GetValue(model);
@@ -20,27 +33,12 @@ internal static class SynchronousDynamoEvaluator
         if (resetEngine is null)
             return CompatibilityFailure(adapterName, "DynamoModel.ResetEngine(bool) is missing.");
 
-        object workspace = model.GetType().GetProperty("CurrentWorkspace")?.GetValue(model);
-        if (workspace is null)
-            return CompatibilityFailure(adapterName, "DynamoModel.CurrentWorkspace is unavailable.");
-        MethodInfo run = workspace.GetType().GetMethod("Run", Type.EmptyTypes);
-        if (run is null)
-            return CompatibilityFailure(adapterName, "HomeWorkspaceModel.Run() is missing.");
-        PropertyInfo evaluationCountProperty = workspace.GetType().GetProperty("EvaluationCount");
-        if (evaluationCountProperty?.CanRead != true)
-            return CompatibilityFailure(adapterName, "HomeWorkspaceModel.EvaluationCount is missing or unreadable.");
-        long evaluationCountBefore = Convert.ToInt64(evaluationCountProperty.GetValue(workspace));
-
-        object nodesValue = workspace.GetType().GetProperty("Nodes")?.GetValue(workspace);
-        if (nodesValue is not IEnumerable nodes)
-            return CompatibilityFailure(adapterName, "WorkspaceModel.Nodes is unavailable.");
-        object[] nodeList = nodes.Cast<object>().Where(node => node is not null).ToArray();
-        var markMethods = new MethodInfo[nodeList.Length];
-        for (int index = 0; index < nodeList.Length; index++)
+        MethodInfo openFile = null;
+        if (graphPath is not null)
         {
-            markMethods[index] = nodeList[index].GetType().GetMethod("MarkNodeAsModified", new[] { typeof(bool) });
-            if (markMethods[index] is null)
-                return CompatibilityFailure(adapterName, $"Node '{nodeList[index].GetType().FullName}' has no MarkNodeAsModified(bool) method.");
+            openFile = FindOpenFileMethod(model);
+            if (openFile is null)
+                return CompatibilityFailure(adapterName, "DynamoModel.OpenFileFromPath(string, ...) is missing.");
         }
 
         object previousMode = processModeProperty.GetValue(scheduler);
@@ -52,6 +50,69 @@ internal static class SynchronousDynamoEvaluator
         catch (Exception exception)
         {
             return CompatibilityFailure(adapterName, $"DynamoScheduler.ProcessMode has no Synchronous value: {ExceptionDiagnostics.Describe(exception)}");
+        }
+
+        // The open has to happen inside the synchronous window too: under the asynchronous
+        // scheduler its work is queued for Revit's Idling loop, which never runs while this
+        // command holds the UI thread.
+        object workspace;
+        try
+        {
+            processModeProperty.SetValue(scheduler, synchronousMode);
+            if (openFile is not null)
+                openFile.Invoke(model, BuildOpenFileArguments(openFile, graphPath));
+            workspace = model.GetType().GetProperty("CurrentWorkspace")?.GetValue(model);
+        }
+        catch (Exception exception)
+        {
+            TryRestore(processModeProperty, scheduler, previousMode);
+            return DynamoExecutionOutcome.Failure(
+                DynamoExecutionStage.Load,
+                $"Dynamo could not open '{graphPath}' in the {adapterName} adapter: {ExceptionDiagnostics.Describe(exception)}");
+        }
+
+        if (workspace is null)
+        {
+            TryRestore(processModeProperty, scheduler, previousMode);
+            return CompatibilityFailure(adapterName, "DynamoModel.CurrentWorkspace is unavailable.");
+        }
+
+        MethodInfo run = workspace.GetType().GetMethod("Run", Type.EmptyTypes);
+        PropertyInfo evaluationCountProperty = workspace.GetType().GetProperty("EvaluationCount");
+        object nodesValue = workspace.GetType().GetProperty("Nodes")?.GetValue(workspace);
+        if (run is null || evaluationCountProperty?.CanRead != true || nodesValue is not IEnumerable nodes)
+        {
+            TryRestore(processModeProperty, scheduler, previousMode);
+            if (run is null)
+                return CompatibilityFailure(adapterName, "HomeWorkspaceModel.Run() is missing.");
+            if (evaluationCountProperty?.CanRead != true)
+                return CompatibilityFailure(adapterName, "HomeWorkspaceModel.EvaluationCount is missing or unreadable.");
+            return CompatibilityFailure(adapterName, "WorkspaceModel.Nodes is unavailable.");
+        }
+
+        long evaluationCountBefore = Convert.ToInt64(evaluationCountProperty.GetValue(workspace));
+        object[] nodeList = nodes.Cast<object>().Where(node => node is not null).ToArray();
+
+        if (nodeList.Length == 0)
+        {
+            TryRestore(processModeProperty, scheduler, previousMode);
+            return DynamoExecutionOutcome.Failure(
+                DynamoExecutionStage.Load,
+                graphPath is null
+                    ? $"The Dynamo workspace is empty in the {adapterName} adapter, so there is nothing to evaluate."
+                    : $"Dynamo opened '{graphPath}' in the {adapterName} adapter but the workspace contains no nodes. "
+                      + "The graph did not load — check that the file is a valid Dynamo graph and that its folder is a Dynamo trusted location.");
+        }
+
+        var markMethods = new MethodInfo[nodeList.Length];
+        for (int index = 0; index < nodeList.Length; index++)
+        {
+            markMethods[index] = nodeList[index].GetType().GetMethod("MarkNodeAsModified", new[] { typeof(bool) });
+            if (markMethods[index] is null)
+            {
+                TryRestore(processModeProperty, scheduler, previousMode);
+                return CompatibilityFailure(adapterName, $"Node '{nodeList[index].GetType().FullName}' has no MarkNodeAsModified(bool) method.");
+            }
         }
 
         Exception invocationFailure = null;
@@ -78,7 +139,6 @@ internal static class SynchronousDynamoEvaluator
         try
         {
             AppDomain.CurrentDomain.FirstChanceException += firstChanceHandler;
-            processModeProperty.SetValue(scheduler, synchronousMode);
             resetEngine.Invoke(model, new object[] { false });
             for (int index = 0; index < nodeList.Length; index++)
                 markMethods[index].Invoke(nodeList[index], new object[] { true });
@@ -139,6 +199,52 @@ internal static class SynchronousDynamoEvaluator
         }
 
         return DynamoExecutionOutcome.Success();
+    }
+
+    /// <summary>
+    /// Finds <c>DynamoModel.OpenFileFromPath</c>, preferring the overload that also takes
+    /// the force-manual-execution flag so the graph loads paused instead of auto-running.
+    /// </summary>
+    private static MethodInfo FindOpenFileMethod(object model) =>
+        model.GetType()
+            .GetMethods(BindingFlags.Instance | BindingFlags.Public)
+            .Where(candidate => candidate.Name == "OpenFileFromPath")
+            .Where(candidate => candidate.GetParameters() is { Length: > 0 } parameters
+                                && parameters[0].ParameterType == typeof(string)
+                                && parameters.Skip(1).All(parameter => parameter.ParameterType == typeof(bool)))
+            .OrderByDescending(candidate => candidate.GetParameters().Length)
+            .FirstOrDefault();
+
+    /// <summary>
+    /// The graph must load paused: Relay runs it once itself, after attaching the engine
+    /// and marking the nodes.
+    /// </summary>
+    private static object[] BuildOpenFileArguments(MethodInfo openFile, string graphPath)
+    {
+        ParameterInfo[] parameters = openFile.GetParameters();
+        var arguments = new object[parameters.Length];
+        arguments[0] = graphPath;
+        for (int index = 1; index < parameters.Length; index++)
+        {
+            // forceManualExecutionMode is the first flag on every known overload.
+            arguments[index] = index == 1
+                ? true
+                : parameters[index].HasDefaultValue && parameters[index].DefaultValue is bool fallback && fallback;
+        }
+        return arguments;
+    }
+
+    private static void TryRestore(PropertyInfo processModeProperty, object scheduler, object previousMode)
+    {
+        try
+        {
+            processModeProperty.SetValue(scheduler, previousMode);
+        }
+        catch (Exception exception)
+        {
+            System.Diagnostics.Trace.WriteLine(
+                $"[Relay] Could not restore the Dynamo scheduler process mode: {ExceptionDiagnostics.Describe(exception)}");
+        }
     }
 
     private static string DescribeRunState(object workspace)
