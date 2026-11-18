@@ -31,6 +31,8 @@
         <DynamoVersion>3.6</DynamoVersion>
         <DynRevitVersion>3.6</DynRevitVersion>
         <RevitVersion>2026</RevitVersion>
+        <!-- Revit_All_Main_Versions_API_x64 2026.5.0 references System.Runtime 10.0; pin to the last net8 build. -->
+        <RevitApiPackageVersion>2026.4.2</RevitApiPackageVersion>
         <TargetFramework>net8.0-windows</TargetFramework>
         <DefineConstants>$(DefineConstants);R26</DefineConstants>
         <DefineConstants>$(DefineConstants);R25_OR_GREATER;R26_OR_GREATER</DefineConstants>
@@ -45,6 +47,7 @@
     </PropertyGroup>
 
     <PropertyGroup>
+        <RevitApiPackageVersion Condition="'$(RevitApiPackageVersion)' == ''">$(RevitVersion).*-*</RevitApiPackageVersion>
         <DynRevitVersion Condition="'$(DynRevitVersion)' == ''">$(DynamoVersion)</DynRevitVersion>
         <Version>$(RevitVersion)</Version>
         <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
@@ -89,7 +92,7 @@
     <ItemGroup>
       <PackageReference Include="Humanizer.Core" Version="2.14.1" ExcludeAssets="runtime" />
       <PackageReference Include="DynamoVisualProgramming.Revit" Version="$(DynRevitVersion).*" ExcludeAssets="runtime" />
-      <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitVersion).*-*" ExcludeAssets="runtime" />
+      <PackageReference Include="Revit_All_Main_Versions_API_x64" Version="$(RevitApiPackageVersion)" ExcludeAssets="runtime" />
       <PackageReference Include="System.Text.Json" Version="8.0.3" ExcludeAssets="runtime" />
     </ItemGroup>
 

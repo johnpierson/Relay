@@ -24,7 +24,7 @@ namespace Relay.Utilities
             return list;
         }
 
-        public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths, bool forceLargeIcon = false)
+        public static void AddItems(Autodesk.Revit.UI.RibbonPanel panelToUse, string[] dynPaths, string tabName, bool forceLargeIcon = false)
         {
             var assembly = Assembly.GetExecutingAssembly();
             var totalFiles = dynPaths.Length;
@@ -80,17 +80,14 @@ namespace Relay.Utilities
                 pushButtonDatas.Add(newButtonData);
             }
 
-            if (!panelToUse.Visible)
-            {
-                panelToUse.Visible = true;
-            }
+            SetPanelVisibility(tabName, panelToUse, true);
 
             if (forceLargeIcon)
             {
                 foreach (var pushButton in pushButtonDatas)
                 {
                     var newButton = panelToUse.AddItem(pushButton);
-                    TrackButton(panelToUse, newButton);
+                    TrackButton(panelToUse, newButton, tabName);
                 }
                 return;
             }
@@ -107,7 +104,7 @@ namespace Relay.Utilities
                     if (!File.Exists(smolImage))
                     {
                         var newButton = panelToUse.AddItem(pushButton);
-                        TrackButton(panelToUse, newButton);
+                        TrackButton(panelToUse, newButton, tabName);
                     }
                     else
                     {
@@ -144,19 +141,20 @@ namespace Relay.Utilities
 
             foreach (var ribbonItem in createdButtons)
             {
-                TrackButton(panelToUse, ribbonItem);
+                TrackButton(panelToUse, ribbonItem, tabName);
             }
         }
 
-        private static void TrackButton(Autodesk.Revit.UI.RibbonPanel panel, RibbonItem button)
+        private static void TrackButton(Autodesk.Revit.UI.RibbonPanel panel, RibbonItem button, string tabName)
         {
             string graphPath = button.ToolTip.GetStringBetweenCharacters('[', ']');
             Globals.RelayButtons[graphPath] = button;
 
-            if (!Globals.RelayPanels.TryGetValue(panel.Name, out List<RibbonItem> panelButtons))
+            string panelKey = PanelKey(tabName, panel.Name);
+            if (!Globals.RelayPanels.TryGetValue(panelKey, out List<RibbonItem> panelButtons))
             {
                 panelButtons = new List<RibbonItem>();
-                Globals.RelayPanels.Add(panel.Name, panelButtons);
+                Globals.RelayPanels.Add(panelKey, panelButtons);
             }
 
             if (!panelButtons.Contains(button))
@@ -181,25 +179,41 @@ namespace Relay.Utilities
                 }
             }
 
-            //now hide empty panels if there are any
-            foreach (var panel in Globals.RelayPanels.Keys)
+            // Revit cannot delete a RibbonPanel once it is created, so hide
+            // panels that no longer have visible buttons (or a backing folder).
+            foreach (var entry in Globals.RelayRibbonPanels.ToArray())
             {
-                var worked = Globals.RelayPanels.TryGetValue(panel, out List<RibbonItem> ribbonItems);
-                if (worked)
+                if (!TrySplitPanelKey(entry.Key, out string tabName, out string panelName))
                 {
-                    var allHidden = ribbonItems.All(r => !r.Visible);
-
-                    if (allHidden)
-                    {
-                        //k, all the buttons are hidden. get the panel to hide now
-                        var ribbonPanel = GetPanel(Globals.RibbonTabName, panel);
-                        if (ribbonPanel != null)
-                        {
-                            ribbonPanel.IsVisible = false;
-                        }
-                    }
-                    
+                    continue;
                 }
+
+                if (IsBuiltInSetupPanel(tabName, panelName))
+                {
+                    continue;
+                }
+
+                bool hasVisibleButton = Globals.RelayPanels.TryGetValue(entry.Key, out List<RibbonItem> ribbonItems)
+                    && ribbonItems.Any(r => r.Visible);
+
+                SetPanelVisibility(tabName, entry.Value, hasVisibleButton);
+            }
+
+            foreach (var tabName in Globals.RelayRibbonTabs.ToArray())
+            {
+                // The tab that hosts Setup stays visible for the rest of the session.
+                if (string.Equals(tabName, Globals.RibbonTabName, StringComparison.OrdinalIgnoreCase))
+                {
+                    SetTabVisibility(tabName, true);
+                    continue;
+                }
+
+                bool anyVisiblePanel = Globals.RelayRibbonPanels.Any(entry =>
+                    TrySplitPanelKey(entry.Key, out string entryTab, out _)
+                    && string.Equals(entryTab, tabName, StringComparison.OrdinalIgnoreCase)
+                    && entry.Value.Visible);
+
+                SetTabVisibility(tabName, anyVisiblePanel);
             }
         }
         
@@ -249,7 +263,7 @@ namespace Relay.Utilities
 
             foreach (AW.RibbonTab tab in ribbon.Tabs)
             {
-                if (tab.Name == tabName)
+                if (tab.Name == tabName || tab.Title == tabName)
                 {
                     foreach (AW.RibbonPanel panel in tab.Panels)
                     {
@@ -271,7 +285,7 @@ namespace Relay.Utilities
 
             foreach (AW.RibbonTab tab in ribbon.Tabs)
             {
-                if (tab.Name == tabName)
+                if (tab.Name == tabName || tab.Title == tabName)
                 {
                     foreach (AW.RibbonPanel panel in tab.Panels)
                     {
@@ -290,12 +304,113 @@ namespace Relay.Utilities
 
             foreach (AW.RibbonTab tab in ribbon.Tabs)
             {
-                if (tab.Name == tabName)
+                if (tab.Name == tabName || tab.Title == tabName)
                 {
                     return tab;
                 }
             }
             return null;
+        }
+
+        internal static string PanelKey(string tabName, string panelName) => $"{tabName}|{panelName}";
+
+        internal static bool TrySplitPanelKey(string key, out string tabName, out string panelName)
+        {
+            int separator = key.IndexOf('|');
+            if (separator <= 0 || separator == key.Length - 1)
+            {
+                tabName = null;
+                panelName = null;
+                return false;
+            }
+
+            tabName = key.Substring(0, separator);
+            panelName = key.Substring(separator + 1);
+            return true;
+        }
+
+        private static bool IsBuiltInSetupPanel(string tabName, string panelName)
+        {
+            return string.Equals(tabName, Globals.RibbonTabName, StringComparison.OrdinalIgnoreCase)
+                   && string.Equals(panelName, "Setup", StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static void RegisterPanel(string tabName, Autodesk.Revit.UI.RibbonPanel panel)
+        {
+            Globals.RelayRibbonTabs.Add(tabName);
+            Globals.RelayRibbonPanels[PanelKey(tabName, panel.Name)] = panel;
+        }
+
+        internal static void EnsureTab(UIApplication uiapp, string tabName)
+        {
+            try
+            {
+                uiapp.CreateRibbonTab(tabName);
+            }
+            catch
+            {
+                // Might Already Exist
+            }
+
+            Globals.RelayRibbonTabs.Add(tabName);
+            SetTabVisibility(tabName, true);
+        }
+
+        internal static Autodesk.Revit.UI.RibbonPanel GetOrCreatePanel(UIApplication uiapp, string tabName, string panelName)
+        {
+            string key = PanelKey(tabName, panelName);
+            if (Globals.RelayRibbonPanels.TryGetValue(key, out Autodesk.Revit.UI.RibbonPanel existing))
+            {
+                SetPanelVisibility(tabName, existing, true);
+                return existing;
+            }
+
+            Autodesk.Revit.UI.RibbonPanel panelToUse;
+            try
+            {
+                panelToUse = uiapp.CreateRibbonPanel(tabName, panelName);
+                panelToUse.Title = panelName;
+            }
+            catch (Exception)
+            {
+                // Revit registers panel IDs for the whole session, so a hidden
+                // panel must be reused rather than created again.
+                panelToUse = uiapp.GetRibbonPanels(tabName)
+                    .FirstOrDefault(p => p.Name.Equals(panelName) || p.Title.Equals(panelName));
+            }
+
+            if (panelToUse != null)
+            {
+                Globals.RelayRibbonPanels[key] = panelToUse;
+                SetPanelVisibility(tabName, panelToUse, true);
+            }
+
+            return panelToUse;
+        }
+
+        internal static void SetPanelVisibility(string tabName, Autodesk.Revit.UI.RibbonPanel panel, bool visible)
+        {
+            if (panel == null)
+            {
+                return;
+            }
+
+            panel.Visible = visible;
+
+            AW.RibbonPanel awPanel = GetPanel(tabName, panel.Title) ?? GetPanel(tabName, panel.Name);
+            if (awPanel != null)
+            {
+                awPanel.IsVisible = visible;
+            }
+        }
+
+        internal static void SetTabVisibility(string tabName, bool visible)
+        {
+            AW.RibbonTab tab = GetTab(tabName);
+            if (tab != null)
+            {
+                tab.IsVisible = visible;
+            }
         }
      
         public static bool SyncGraphs(UIApplication uiapp)
@@ -321,16 +436,7 @@ namespace Relay.Utilities
                 // current tab name
                 string potentialTab = new DirectoryInfo(potentialTabDirectory).Name;
 
-                try
-                {
-                    // Create a custom ribbon tab
-                    uiapp.CreateRibbonTab(potentialTab);
-                }
-                catch
-                {
-                    // Might Already Exist
-                }
-
+                EnsureTab(uiapp, potentialTab);
 
                 //check if a specific Revit version directory exists, if it does use that.
                 string[] graphDirectories = Directory.GetDirectories(potentialTabDirectory);
@@ -352,19 +458,12 @@ namespace Relay.Utilities
                     //the upper folder name (panel name)
                     DirectoryInfo dInfo = new DirectoryInfo(directory);
 
-                    Autodesk.Revit.UI.RibbonPanel panelToUse;
-
-                    //try to create the panel, if it already exists, just use it
-                    try
+                    Autodesk.Revit.UI.RibbonPanel panelToUse = GetOrCreatePanel(uiapp, potentialTab, dInfo.Name);
+                    if (panelToUse == null)
                     {
-                        panelToUse = uiapp.CreateRibbonPanel(potentialTab, dInfo.Name);
-                        panelToUse.Title = dInfo.Name;
-                    }
-                    catch (Exception)
-                    {
-                        panelToUse = uiapp.GetRibbonPanels(potentialTab).First(p => p.Name.Equals(dInfo.Name));
-
-                        panelToUse.Visible = true;
+                        System.Diagnostics.Trace.WriteLine(
+                            $"[Relay] Could not get or create ribbon panel '{dInfo.Name}' on tab '{potentialTab}'.");
+                        continue;
                     }
 
                     //find the files that do not have a button yet
@@ -397,7 +496,7 @@ namespace Relay.Utilities
 
                     if (toCreate.Any())
                     {
-                        RibbonUtils.AddItems(panelToUse, toCreate.ToArray(), forceLargeIcons);
+                        RibbonUtils.AddItems(panelToUse, toCreate.ToArray(), potentialTab, forceLargeIcons);
                     }
                 }
             }

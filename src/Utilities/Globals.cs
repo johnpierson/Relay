@@ -26,5 +26,7 @@ namespace Relay.Utilities
 
         public static Dictionary<string, RibbonItem> RelayButtons = new Dictionary<string, RibbonItem>();
         public static Dictionary<string, List<RibbonItem>> RelayPanels = new Dictionary<string, List<RibbonItem>>();
+        public static Dictionary<string, RibbonPanel> RelayRibbonPanels = new Dictionary<string, RibbonPanel>();
+        public static HashSet<string> RelayRibbonTabs = new HashSet<string>();
     }
 }
