@@ -102,14 +102,20 @@ namespace Relay
         {
             if (sender is UIApplication uiapp)
             {
-                RibbonUtils.SyncGraphs(uiapp);
+                if (RibbonUtils.SyncGraphs(uiapp))
+                {
+                    RibbonUtils.HideUnused();
+                }
             }
             else
             {
                 var application = sender as Application;
                 if (application == null) return;
                 uiapp = new UIApplication(application);
-                RibbonUtils.SyncGraphs(uiapp);
+                if (RibbonUtils.SyncGraphs(uiapp))
+                {
+                    RibbonUtils.HideUnused();
+                }
             }
         }
 
@@ -156,6 +162,7 @@ namespace Relay
             };
 
             setupRibbonPanel.AddStackedItems(aboutButtonData, syncButtonData);
+            RibbonUtils.RegisterPanel(Globals.RibbonTabName, setupRibbonPanel);
         }
         private Assembly CurrentDomainOnAssemblyResolve(object sender, ResolveEventArgs args)
         {
